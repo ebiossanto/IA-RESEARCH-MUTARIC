@@ -82,7 +82,7 @@ decodificação por Hamming não tem correção de erro.
 > (c) reportar a curva acurácia × σ (hoje só há pontos isolados).
 >
 > **Fechado em `docs/05` §2** (04/10/2026): `body_cont` faz (a) com de-atenuação e
-> peso de confiabilidade, e (c) virou `curva_sigma.png` com 7 valores de σ.
+> peso de confiabilidade, e (c) virou `figs/curva_sigma.png` com 7 valores de σ.
 > Na curva nova, σ=0,10: **0,338 → 0,733** (o E1 mede 0,334 para o mesmo limiar; a
 > diferença é só a semente do ruído); σ=0,40: 0,167 (= chance) → 0,308. O caso limpo
 > *piora* um pouco (0,919 → 0,892) e acima de σ≈0,30 os pesos voltam a atrapalhar

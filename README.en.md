@@ -1,5 +1,7 @@
 # ricemotions — emotion written in pixels
 
+[![CI](https://github.com/ebiossanto/IA-RESEARCH-MUTARIC/actions/workflows/ci.yml/badge.svg)](https://github.com/ebiossanto/IA-RESEARCH-MUTARIC/actions/workflows/ci.yml)
+
 > English version. The full documentation (`docs/`) is in Portuguese.
 
 The bridge between the **TEOA** project (*Theory of the Artificial Optimal State* —
@@ -37,7 +39,7 @@ ricemotions/
   experimentos.py            E1–E9, figures, the only module with I/O
 tests/test_smoke.py          contracts + regression of published numbers
 docs/                        6 documents: architecture · findings · bridge · roadmap · residue/agency · MutaCore
-figs/  resultados/           generated figures and results.json
+figs/  resultados/           generated figures and resultados/resultados.json
 ```
 
 ## Running

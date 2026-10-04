@@ -381,7 +381,7 @@ entre as causas da próxima transição — e há um número que prova a diferen
 |---|---|---|
 | P0.2 `codebook_up_to_isomorfismo` no E3 | **feito** — `carga_isomorfismo`, 0,208 → 1,000 | §5, `resultados.json` |
 | P0.3 decodificação soft | **feito** — `body_cont` + correção + pesos | §2 |
-| P0.4 curva acurácia × σ | **feito** — 7 valores de σ | §2.2, `curva_sigma.png` |
+| P0.4 curva acurácia × σ | **feito** — 7 valores de σ | §2.2, `figs/curva_sigma.png` |
 | P0.1 `run_all.py` limpo | **feito** — hoje 27/27 testes | `tests/test_smoke.py` |
 | P0.5 CI (GitHub Actions) | **não feito** | — |
 | P1.7 carga espalhada + decodificador | **origem**: ideia recusada do MutaCore (não verificável lá) | `docs/06` §8.5/§9, `docs/04` P1.7 |

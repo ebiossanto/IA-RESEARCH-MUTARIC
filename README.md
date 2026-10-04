@@ -1,5 +1,7 @@
 # ricemotions — emoção escrita em pixels
 
+[![CI](https://github.com/ebiossanto/IA-RESEARCH-MUTARIC/actions/workflows/ci.yml/badge.svg)](https://github.com/ebiossanto/IA-RESEARCH-MUTARIC/actions/workflows/ci.yml)
+
 Ponte entre o **projeto TEOA** (Teoria do Estado Ótimo Artificial — *por que* e
 *quando* uma emoção surge) e o **projeto PIXEL/RIC** (código de incidência relacional
 — *o que* dá para recuperar de um estado escrito em pixels).
