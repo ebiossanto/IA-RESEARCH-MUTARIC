@@ -19,6 +19,11 @@ Três realimentações (docs/05):
   3. S* temporário       o alvo muda com a tensão e RELAXA de volta — mudança
                          temporária, não troca de identidade.
 
+Uma quarta entrada, EXTERNA e opcional (docs/06): a carga da máquina
+(``passo(..., carga_hw=)``) sobe o τ do RIC pelo mesmo caminho do resíduo.
+Não participa de E6 (E6 mede só o ciclo interno) e com o padrão 0.0 o
+comportamento do agente é idêntico ao publicado.
+
 Critério operacional de agência que E6 mede:
 
   DOIS agentes no MESMO estado X, com histórias de resíduo diferentes, produzem
@@ -30,6 +35,7 @@ import numpy as np
 from ricemotions.mundo import NV, T, affect
 from ricemotions import glifo as G
 from ricemotions import residuo as R
+from ricemotions import homeostase as H
 
 # acoplamento fixo entre canais (E,T,C,B,G,N) — o ambiente interno não é independente:
 # tensão pressiona energia, coerência inibe tensão, progresso acalma tensão, etc.
@@ -71,6 +77,7 @@ class Agente:
         self.k_t, self.k_c = k_t, k_c
         self.k_tau, self.k_w, self.beta_t = k_tau, k_w, beta_t
         self.alpha, self.k_relax = alpha, k_relax
+        self.carga_hw = 0.0                              # carga externa da máquina (docs/06)
         self.rng = np.random.default_rng(seed)
         self.hist = []                                   # trajetória recente (auto-retrato)
         self.log = {"s_T": [], "s_C": [], "tau": [], "w": [], "landauer": [], "res": []}
@@ -110,13 +117,19 @@ class Agente:
         # 2) resíduo acumulado + tensão acima do normal -> tau e pesos
         g = float(self.res.mean())
         tensao_excedente = max(0.0, float(X[1]) - float(self.s0[1]))
-        self.tau = R.tau_efetivo(self.tau0, g + self.beta_t * tensao_excedente,
+        # carga da máquina (telemetria externa, docs/06): desloca o τ0 pelo mesmo
+        # caminho do resíduo; com carga_hw=0 o τ é exatamente o publicado em E6
+        self.tau = R.tau_efetivo(self.tau0 + H.tau_carga(self.carga_hw, self.carga_hw),
+                                 g + self.beta_t * tensao_excedente,
                                  self.k_tau)
         self.w = np.clip(1.0 + self.k_w * (self.res - g), 0.3, 2.0)
         return g
 
     # ---- ciclo ----
-    def passo(self, X, residuo_atual=None):
+    def passo(self, X, residuo_atual=None, carga_hw=0.0):
+        """Um ciclo. ``carga_hw`` ∈ [0,1] é a carga externa da máquina (térmico+cpu);
+        0 (padrão) = sem entrada externa — E6 roda sempre assim."""
+        self.carga_hw = float(np.clip(carga_hw, 0.0, 1.0))
         img = self.representar(X)
         E = self.perceber(img, residuo_atual)
         g = self.modular(E, X)

@@ -9,8 +9,15 @@ E4  Pipeline completo (família por polaridade + procedência por relações) vs
 E5  Resíduo do ambiente: mesma energia, três destinos (espalhado | banda | simetria).
 E6  Agência: Landauer -> T/C -> tau -> pesos -> transição (mão dupla vs roteiro).
     + curva acurácia x sigma do leitor robusto (correção de atenuação por redundância).
+E7  MutaCore: o resíduo de transição (§B) reproduz o JSON publicado? E as previsões
+    dele ("6c_nivel cai, 6c_relacional segura") valem no nosso pipeline?
+E8  MutaCore: o benchmark de sobrevivência (§E) — reprodução fiel, ablação 2x2x2,
+    varredura de severidade e o limiar exato em que a morte passa a ser possível.
+E9  MutaCore: o espaço de chave da cifra acoplada ao resíduo (§F) e força bruta.
+
+Análise, vereditos e provas: docs/06_analise_mutacore.md.
 """
-import json, os, sys
+import json, os, sys, time
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -20,6 +27,7 @@ from ricemotions.mundo import (CLASSES, CAUSAS, FAMILIAS, make_set, affect, VARS
 from ricemotions import glifo as G
 from ricemotions import residuo as R
 from ricemotions import agente as A
+from ricemotions import homeostase as H
 
 # Windows grava em cp1252 por padrão e as chaves do JSON contêm "σ"; sem isto,
 # main() estoura UnicodeEncodeError logo após calcular tudo.
@@ -334,6 +342,182 @@ def e6_agencia(Ite, yte, tau0=0.7, passos=32, repouso=40, seed=1):
     return out
 
 
+# ================= E7: o resíduo do MutaCore no nosso pipeline =================
+def e7_residuo_mutacore(Ite, yte, ste, Ete, parts, avaliar):
+    """E7 — o formalismo de resíduo do MutaCore (§B) medido no NOSSO pipeline.
+
+    (1) reproduz o JSON publicado (γ=0,8, α_L=0,15, λ do 2º código do documento);
+    (2) mede a MAGNITUDE do deslocamento Φ que esse formalismo injeta;
+    (3) testa as previsões do documento — "6c_nivel sofre penalidade mensurável,
+        6c_relacional mantém a estabilidade" — injetando Φ nos 300 episódios do
+        teste e re-avaliando com o MESMO pipeline;
+    (4) tem um CONTROLE: re-renderiza os episódios intactos com os mesmos RNGs,
+        para separar efeito do resíduo de ruído de re-renderização;
+    (5) repete com γ ampliado 10x (resíduo ~ sinal) e 100x (destruição), separando
+        "efeito nulo" de "parâmetro publicado pequeno demais".
+    """
+    sim = H.simular_landauer()
+    dif = max(abs(sim[k][c] - H.PUBLICADO[k][c]) for k in H.PUBLICADO for c in H.PUBLICADO[k])
+    amp = float(np.ptp(H.roteiro_mutacore("alegria", "meta")[1]))      # sinal do roteiro
+
+    def renderiza(epis):
+        imgs = []
+        for i, ep in enumerate(epis):
+            v, a = affect(ep); k = int(yte[i])
+            imgs.append(G.render(ep, v, a, CLASSES[k][0], parts[int(ste[i])],
+                                 np.random.default_rng(7000 + i)))
+        return np.array(imgs)
+
+    CHAVES = ("6c_relacional", "6c_nivel", "3c_relacional", "pipeline_completo", "carga_acc")
+    orig = avaliar(Ite, yte, ste)
+    controle = avaliar(renderiza(list(Ete)), yte, ste)
+    deltas = {"re-renderização (controle)": {k: float(controle[k] - orig[k]) for k in CHAVES}}
+    for nome, mult in [("gamma_0.8", 1.0), ("gamma_x10", 10.0), ("gamma_x100", 100.0)]:
+        eps2 = [H.injetar(ep, H.residuo_transicao(ep, gamma=H.GAMMA * mult)) for ep in Ete]
+        d = avaliar(renderiza(eps2), yte, ste)
+        deltas[nome] = {k: float(d[k] - controle[k]) for k in CHAVES}
+    # o resíduo mudaria a FAMÍLIA afetiva de algum glifo?
+    fam_ok = [((affect(H.injetar(ep))[0] > 0) == (FAM_OF[yte[i]] == 0)) for i, ep in enumerate(Ete)]
+    return dict(
+        reproducao_do_json_publicado=bool(dif < 5e-6), diferenca_max_json=dif,
+        max_phi=float(sim["_max_phi"]), amplitude_do_sinal=amp,
+        razao_phi_sinal=float(sim["_max_phi"] / amp),
+        familia_afetiva_preservada=float(np.mean(fam_ok)),
+        deltas=deltas,
+        observacao="base = re-renderização controle com os MESMOS RNGs; "
+                   "só o resíduo distingue as outras duas linhas",
+    )
+
+
+# ================= E8: benchmark de sobrevivência (MutaCore §E) =================
+class _GlobalRNG:
+    """Adaptador: o benchmark do documento usa np.random global nos dois robôs."""
+    @staticmethod
+    def random():
+        return float(np.random.rand())
+
+
+def e8_sobrevivencia(n=1000, sementes=50):
+    """E8 — o benchmark de sobrevivência do MutaCore (§E), reproduzido e ablado.
+
+    Três perguntas: (a) o documento mede de fato uma sobrevida maior? (b) a morte
+    é sequer possível nos parâmetros publicados? (c) o que sobrevive — a política
+    de recarga cedo ou a dinâmica de S*? Ver docs/06 §4.
+    """
+    AFI = dict(dinamico=True, generosa=True, esfria=0.10)   # "robô afetivo" do doc
+    RIG = dict(dinamico=False, generosa=False, esfria=0.02)  # "robô linear" do doc
+    dH_max = 0.15 * 0.8 ** 2 + 0.05 * 0.6                   # cpu=0.8, ruído=0,6
+
+    def roda(**cfg):
+        """Um robô isolado; devolve (ciclos, metas, E_min, T_max, defensivas)."""
+        X, vivo, metas, defens = S_STAR.copy(), True, 0, 0
+        minE, maxT = float(X[0]), float(X[1])
+        rs = np.random.default_rng(cfg.pop("seed", 0))
+        for t in range(n):
+            X, vivo, dfv, meta = H.passo_robo(X, float(rs.uniform(0.1, 0.6)),
+                                              t % 50 < 15, rng=rs, **cfg)
+            metas += int(meta); defens += int(dfv)
+            minE, maxT = min(minE, X[0]), max(maxT, X[1])
+            if not vivo:
+                break
+        return dict(ciclos=t + 1, metas=metas,
+                    E_min=minE, T_max=maxT, defensivas=defens)
+
+    # (1) reprodução FIEL: os dois robôs no MESMO ruído, RNG global como no doc
+    np.random.seed(42)
+    Xa, Xl, va, vl = S_STAR.copy(), S_STAR.copy(), True, True
+    traj = {"afetivo": [], "linear": []}
+    met, cic = {"afetivo": 0, "linear": 0}, {"afetivo": 0, "linear": 0}
+    minE, maxT = [1.0, 1.0], [0.0, 0.0]
+    for t in range(n):
+        env = float(np.random.uniform(0.1, 0.6)); cpu = (t % 50 < 15)
+        if va:
+            Xa, va, _, m = H.passo_robo(Xa, env, cpu, rng=_GlobalRNG(), **AFI)
+            met["afetivo"] += int(m); cic["afetivo"] += 1
+        if vl:
+            Xl, vl, _, m = H.passo_robo(Xl, env, cpu, rng=_GlobalRNG(), **RIG)
+            met["linear"] += int(m); cic["linear"] += 1
+        minE[0], maxT[0] = min(minE[0], Xa[0]), max(maxT[0], Xa[1])
+        minE[1], maxT[1] = min(minE[1], Xl[0]), max(maxT[1], Xl[1])
+        if t % 10 == 0:
+            traj["afetivo"].append([float(Xa[0]), float(Xa[1])])
+            traj["linear"].append([float(Xl[0]), float(Xl[1])])
+    fiel = dict(
+        afetivo=dict(ciclos=cic["afetivo"], metas=met["afetivo"], E_min=minE[0], T_max=maxT[0]),
+        linear=dict(ciclos=cic["linear"], metas=met["linear"], E_min=minE[1], T_max=maxT[1]))
+    fiel["ganho_de_sobrevida_pct"] = 100.0 * (fiel["afetivo"]["ciclos"] - fiel["linear"]["ciclos"]) \
+        / max(fiel["linear"]["ciclos"], 1)
+
+    # (2) a morte é possível nos parâmetros publicados?
+    limites = dict(ponto_fixo_max_de_T=float(dH_max / 0.15), limiar_de_T=0.95,
+                   E_min_possivel_politica_rigida=float(0.20 - 0.015), limiar_de_E=0.0,
+                   morte_possivel=bool(dH_max / 0.15 >= 0.95 or (0.20 - 0.015) <= 0))
+
+    # (3) ablação 2x2x2 nos parâmetros do documento
+    abl = {}
+    for d in (False, True):
+        for g in (False, True):
+            for f in (False, True):
+                nome = f"S*{'din' if d else 'fix'}|pol{'tensao' if g else 'E<0.20'}|esfria{f}"
+                abl[nome] = roda(dinamico=d, generosa=g, esfria=0.10 if f else 0.02, seed=0)
+
+    # (4) varredura de severidade: o gasto por ciclo é o que decide
+    CFG3 = [("afetiva (S*din+tensão)", AFI),
+            ("S*fixo+tensão (abla S*)", dict(dinamico=False, generosa=True, esfria=0.10)),
+            ("rígida (E<0.20)", RIG)]
+    varredura = {}
+    for gasto in (0.015, 0.10, 0.12, 0.125, 0.15):
+        varredura[f"{gasto}"] = {nome: roda(seed=0, gasto=gasto, **dict(cfg))["ciclos"]
+                                 for nome, cfg in CFG3}
+
+    # (5) regime letal: 50 sementes, o que a dinâmica de S* faz com a sobrevivência
+    letal = {}
+    for nome, cfg in [("afetivo (S*din + tensao)", dict(dinamico=True, generosa=True, esfria=0.10)),
+                      ("S*FIXO + tensao (abla S*)", dict(dinamico=False, generosa=True, esfria=0.10)),
+                      ("linear rigido (E<0.20)", dict(dinamico=False, generosa=False, esfria=0.02))]:
+        v = [roda(seed=s, gasto=0.13, **dict(cfg))["ciclos"] for s in range(sementes)]
+        letal[nome] = dict(media=float(np.mean(v)), desvio=float(np.std(v)),
+                           min=int(np.min(v)), max=int(np.max(v)))
+    efeito = letal["afetivo (S*din + tensao)"]["media"] - letal["S*FIXO + tensao (abla S*)"]["media"]
+    return dict(reproducao_fiel=fiel, limites_analiticos=limites, ablacao=abl,
+                varredura_de_severidade=varredura, regimeletal=letal,
+                efeito_do_S_dinamico_ciclos=float(efeito),
+                observacao="nos parâmetros publicados ambos sobrevivem 1000/1000 e a "
+                           "linha 'SUCESSO DA CAMADA 3' nunca imprime",
+                trajeto=traj)
+
+
+# ================= E9: chave acoplada ao resíduo (MutaCore §F) =================
+def e9_chave_residuo():
+    """E9 — a cifra cuja chave é o resíduo: quantos bits ela realmente tem?"""
+    parts, _ = G.codebook(D_CARGA)
+    base = len(parts)
+    msg, achados = "MutaCore v2", 0
+    dig = G.text_to_digits(msg, base)
+
+    def cifra(d, residuo, rev=False):
+        seed = int(np.round(residuo * 100000)) & 0xFFFFFFFF
+        ks = np.random.default_rng(seed).integers(0, base, size=len(d))
+        return [(int(x) - int(k)) % base if rev else (int(x) + int(k)) % base
+                for x, k in zip(d, ks)]
+
+    cip = cifra(dig, 0.034521)
+    t0 = time.time()
+    chave = None
+    for s in range(100001):                       # espaço real: round(resíduo*1e5)
+        achados += 1
+        if G.digits_to_text(cifra(cip, s / 100000.0, True), base) == msg:
+            chave = s / 100000.0
+            break
+    return dict(mensagem=msg, simbolos=len(dig), base=base,
+                espaco_de_chave=100001, bits_de_chave=float(np.log2(100001)),
+                candidatos_testados=achados, chave_recuperada=chave,
+                segundos=round(time.time() - t0, 3),
+                roundtrip_com_chave_exata=(G.digits_to_text(cifra(cip, 0.034521, True), base) == msg),
+                observacao="o documento chama isso de One-Time Pad; com "
+                           "<17 bits de chave a força bruta é trivial (docs/06 §6)")
+
+
 def main():
     rng = np.random.default_rng(0)
     os.makedirs(FIG, exist_ok=True); os.makedirs(RES, exist_ok=True)
@@ -462,6 +646,10 @@ def main():
     res["curva_sigma"] = curva_sigma(Itr, ytr, Ite, yte, tau)
     res["E5_residuo"] = e5_residuo(Itr, ytr, Ite, yte, ste, Ete, parts, bits, tau, n=300)
     res["E6_agencia"] = e6_agencia(Ite, yte, tau0=tau)
+    # ---- MutaCore (docs/06): o que passou na análise, medido aqui ----
+    res["E7_residuo_mutacore"] = e7_residuo_mutacore(Ite, yte, ste, Ete, parts, evaluate)
+    res["E8_sobrevivencia"] = e8_sobrevivencia()
+    res["E9_chave_residuo"] = e9_chave_residuo()
 
     # ---- demonstração: mensagem de texto em vários glifos emocionais ----
     msg = "Ganhei!"
@@ -525,6 +713,62 @@ def figuras(res, Ite, yte, Gtr, ytr, tau):
     ax.set_xlabel("ruído de pixel σ"); ax.set_ylabel("símbolo decodificado"); ax.legend(fontsize=8); ax.grid(alpha=.3)
     ax.set_title("Carga explícita: capacidade × robustez")
     fig.tight_layout(); fig.savefig(os.path.join(FIG, "carga.png"), dpi=130); plt.close(fig)
+    # 5) MutaCore: o que foi reproduzido e o que foi refutado (docs/06)
+    fig, ax = plt.subplots(2, 2, figsize=(11, 7.5))
+    for fam in FAMILIAS:
+        for cause in CAUSAS:
+            Rl = H.residuo_transicao(H.roteiro_mutacore(fam, cause))
+            if Rl.max() > 0:
+                ax[0, 0].plot(Rl, label=f"{fam}-{cause}")
+    e7 = res["E7_residuo_mutacore"]
+    ax[0, 0].set_title(f"MutaCore R_L (reproduz o JSON: {e7['reproducao_do_json_publicado']})")
+    ax[0, 0].set_xlabel("passo t"); ax[0, 0].set_ylabel("R_L")
+    ax[0, 0].legend(fontsize=7); ax[0, 0].grid(alpha=.3)
+    ax[0, 0].text(0.98, 0.62, f"|Φ|máx = {e7['max_phi']:.3f}\n= {e7['razao_phi_sinal']:.1%} do sinal",
+                  transform=ax[0, 0].transAxes, ha="right", fontsize=8)
+
+    tr = res["E8_sobrevivencia"]["trajeto"]; xs = np.arange(len(tr["afetivo"])) * 10
+    ax[0, 1].plot(xs, [p[0] for p in tr["afetivo"]], label="E afetivo")
+    ax[0, 1].plot(xs, [p[1] for p in tr["afetivo"]], label="T afetivo")
+    ax[0, 1].plot(xs, [p[0] for p in tr["linear"]], "--", label="E linear")
+    ax[0, 1].plot(xs, [p[1] for p in tr["linear"]], "--", label="T linear")
+    ax[0, 1].axhline(0.95, color="red", ls=":", lw=1)
+    ax[0, 1].text(320, 0.958, "morte por T", color="red", fontsize=7)
+    ax[0, 1].set_ylim(0, 1.0); ax[0, 1].set_xlabel("ciclo")
+    ax[0, 1].set_title(f"Benchmark: {res['E8_sobrevivencia']['reproducao_fiel']['afetivo']['ciclos']}/1000 e "
+                       f"{res['E8_sobrevivencia']['reproducao_fiel']['linear']['ciclos']}/1000 vivos")
+    ax[0, 1].legend(fontsize=7, ncol=2); ax[0, 1].grid(alpha=.3)
+
+    var = res["E8_sobrevivencia"]["varredura_de_severidade"]
+    gast = sorted(float(k) for k in var)
+    for nome in var[f"{gast[0]}"]:
+        ax[1, 0].plot(gast, [var[f"{g}"][nome] for g in gast], "o-", label=nome)
+    ax[1, 0].axhline(1000, color="gray", ls="--", lw=0.8)
+    ax[1, 0].axvline(0.015, color="black", ls=":", lw=1)
+    ax[1, 0].set_xlabel("gasto de energia por ciclo"); ax[1, 0].set_ylabel("ciclos sobrevividos")
+    ax[1, 0].set_title("A morte é do GASTO (publicado 0,015), não da emoção")
+    ax[1, 0].legend(fontsize=7); ax[1, 0].grid(alpha=.3)
+
+    d7 = res["E7_residuo_mutacore"]["deltas"]
+    labs = [l for l in d7 if "x100" not in l]      # γ×100 destrói o glifo: fora de escala
+    w7 = 0.36
+    for j, k in enumerate(["6c_relacional", "6c_nivel"]):
+        vals = [d7[l][k] for l in labs]
+        barras = ax[1, 1].bar(np.arange(len(labs)) + (j - 0.5) * w7, vals, w7, label=k)
+        for rect, v in zip(barras, vals):
+            ax[1, 1].text(rect.get_x() + rect.get_width() / 2, v - 0.004 if v < 0 else 0.002,
+                          f"{v:+.3f}", ha="center", va="top" if v < 0 else "bottom", fontsize=6)
+    ax[1, 1].axhline(0, c="k", lw=1)
+    ax[1, 1].set_ylim(-0.085, 0.032)
+    ax[1, 1].set_xticks(range(len(labs))); ax[1, 1].set_xticklabels(labs, rotation=12, fontsize=7)
+    ax[1, 1].set_ylabel("Δ acurácia vs controle")
+    ax[1, 1].set_title("Previsão: 'nível cai, relacional segura'")
+    ax[1, 1].text(0.99, 0.97, f"γ×100 (destruição): {d7['gamma_x100']['6c_relacional']:+.2f} relacional / "
+                              f"{d7['gamma_x100']['6c_nivel']:+.2f} nível",
+                  transform=ax[1, 1].transAxes, ha="right", va="top", fontsize=7)
+    ax[1, 1].legend(fontsize=7, loc="lower left"); ax[1, 1].grid(alpha=.3, axis="y")
+    fig.suptitle("MutaCore/RIC: reprodução, magnitude e ablação (docs/06)", fontsize=10)
+    fig.tight_layout(); fig.savefig(os.path.join(FIG, "mutacore.png"), dpi=130); plt.close(fig)
 
 
 if __name__ == "__main__":

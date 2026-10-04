@@ -18,6 +18,7 @@ from ricemotions import glifo as G  # noqa: E402
 from ricemotions import mundo as M  # noqa: E402
 from ricemotions import residuo as R  # noqa: E402
 from ricemotions import agente as A  # noqa: E402
+from ricemotions import homeostase as H  # noqa: E402
 
 
 # ---------------- mundo ----------------
@@ -273,6 +274,96 @@ def test_texto_roundtrip():
     for base in (2, 41, 203):
         for msg in ("Ganhei!", "emoção", "a"):
             assert G.digits_to_text(G.text_to_digits(msg, base), base) == msg
+
+
+# ---------------- MutaCore (docs/06, E7-E9) ----------------
+def test_reproduz_o_json_do_mutacore():
+    """O JSON publicado do R_L (γ=0,8, α_L=0,15) é reproduzido exatamente."""
+    sim = H.simular_landauer()
+    for k, pub in H.PUBLICADO.items():
+        for campo, v in pub.items():
+            assert abs(sim[k][campo] - v) < 5e-6, (k, campo, sim[k][campo], v)
+    # e a MAGNITUDE: o deslocamento injetado é ~10% da amplitude do sinal do roteiro
+    assert 0.015 < sim["_max_phi"] < 0.03
+    assert 0.05 < sim["_max_phi"] / float(np.ptp(H.roteiro_mutacore("alegria", "meta")[1])) < 0.2
+
+
+def test_homeostase_regras():
+    """Telemetria -> S* e τ (MutaCore §C) e política pela distância ao S* (§D)."""
+    frio = H.S_star_homeostatico(40.0, 0.0)
+    quente = H.S_star_homeostatico(80.0, 1.0)
+    assert np.allclose(frio, M.S_STAR)                    # sem carga, alvo publicado
+    assert np.all((0.0 <= quente) & (quente <= 1.0))      # recorte em [0,1]
+    assert quente[0] < frio[0] and quente[1] > frio[1]     # aceita cansaço, sobe o teto de T
+    assert quente[4] < frio[4] and quente[2] < frio[2]     # resignação de meta e de coerência
+    assert H.tau_carga(0.0, 0.0) == 0.0
+    assert 0.0 < H.tau_carga(1.0, 1.0) <= 0.15
+    X = np.array([0.6, 0.6, 0.9, 0.7, 0.8, 0.4])
+    assert H.politica(X, M.S_STAR) == "DEFENSIVA"         # T 0,6 > S*_T + 0,15
+    X[1] = 0.1
+    assert H.politica(X, M.S_STAR) == "EXPLORATORIA"       # E 0,6: déficit 0,2 < 0,25
+
+
+def test_benchmark_mutacore():
+    """Nos parâmetros publicados a morte é IMPOSSÍVEL; gasto > carga (0,12) mata."""
+    def roda(gasto, **cfg):
+        X, vivo = M.S_STAR.copy(), True
+        rs = np.random.default_rng(0)
+        for t in range(1000):
+            X, vivo, _, _ = H.passo_robo(X, float(rs.uniform(0.1, 0.6)),
+                                         t % 50 < 15, rng=rs, gasto=gasto, **cfg)
+            if not vivo:
+                return t + 1, X
+        return 1000, X
+    afetivo = dict(dinamico=True, generosa=True, esfria=0.10)
+    c, X = roda(0.015, **afetivo)                          # gasto do documento
+    assert c == 1000 and X[0] > 0.0 and X[1] < 0.95        # ninguém morre (as duas mortes)
+    c_sfixo, _ = roda(0.015, dinamico=False, generosa=True, esfria=0.10)
+    assert c_sfixo == 1000                                 # ablação: idem
+    c_letal, _ = roda(0.15, **afetivo)
+    assert c_letal < 1000                                  # gasto > carga: morre
+    c_letal_fixo, _ = roda(0.15, dinamico=False, generosa=True, esfria=0.10)
+    assert c_letal_fixo > c_letal                          # S* dinâmico CUSTA sobrevivência
+
+
+def test_chave_acoplada_ao_residuo_e_bruteforceavel():
+    """A 'chave' da cifra do MutaCore tem ~1e5 valores: 16,6 bits, força bruta trivial."""
+    from ricemotions import experimentos as E
+    r = E.e9_chave_residuo()
+    assert r["espaco_de_chave"] == 100001 and r["bits_de_chave"] < 17.0
+    assert r["roundtrip_com_chave_exata"] is True
+    assert abs(r["chave_recuperada"] - 0.03452) < 1e-9     # recuperada por varredura
+    assert r["candidatos_testados"] <= r["espaco_de_chave"]
+    assert r["simbolos"] > 0 and r["base"] == 41
+
+
+def test_carga_da_maquina_sobe_o_tau():
+    """Telemetria externa -> τ do RIC; sem carga, o agente continua como em E6."""
+    seq = [R.gerar(rng=np.random.default_rng(500 + t)) for t in range(12)]
+    X1 = np.full(M.NV, 0.5); X2 = np.full(M.NV, 0.5)
+    sem, com = A.Agente(M.S_STAR, seed=3), A.Agente(M.S_STAR, seed=3)
+    for t in range(12):
+        X1 = sem.passo(X1, seq[t])
+        X2 = com.passo(X2, seq[t], carga_hw=1.0)
+    assert com.tau > sem.tau + 0.05                        # carga sobe o limiar
+    assert sem.tau >= 0.7 - 1e-9                           # e sem carga não colapsa
+
+
+def test_afirmacao_do_918_nao_vale_para_ruido():
+    """~91,8% vale para transformações afins; para σ≤0,30 o leitor duro vai ao acaso."""
+    from ricemotions.experimentos import build, graphs
+    parts, _ = G.codebook(4)
+    Itr, ytr, _, _ = build(30, 1, parts)
+    Ite, yte, _, _ = build(10, 3, parts)
+    Aa, lab = G.alphabet(graphs(Itr, 0.7), ytr)
+    def acc(imgs):
+        return G.balanced_acc(G.decode_body_alphabet(graphs(imgs, 0.7), Aa, lab), yte)
+    limpo = acc(Ite)
+    brilho = acc([G.t_bright(i, 0.7, 0.1) for i in Ite])
+    ruido = acc([G.t_noise(i, 0.30, np.random.default_rng(7)) for i in Ite])
+    assert limpo > 0.75 and brilho > limpo - 0.15          # afins: mantém
+    assert ruido < 0.40                                    # σ=0,30: perto de 1/6 = 0,167
+    assert ruido < limpo - 0.30                            # e muito abaixo do "91,8%"
 
 
 TESTES = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]

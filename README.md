@@ -8,12 +8,12 @@ Um **episódio** de 6 canais × 32 passos vira **valência + ativação** (TEOA)
 renderizado como um **glifo 48×32** e é lido de volta por um leitor relacional que
 tentam recuperar **família afetiva, procedência e uma carga explícita de 5,36 bits**.
 
-> **Status: protótipo exploratório.** Os quatro experimentos (E1–E4) mais os dois
-> novos (E5 resíduo, E6 agência) rodam, são determinísticos e têm **21 testes** — mas
-> os números do E1–E4 vêm de um mundo **roteirizado** (`mundo.py` escreve as
-> procedências à mão) e de um leitor que **relê o que foi gravado literalmente**.
-> Leia `docs/02_analise_achados.md` antes de citar qualquer número; ele lista o que
-> os resultados **não** sustentam.
+> **Status: protótipo exploratório.** Os seis experimentos principais (E1–E6) mais
+> os três de verificação externa (E7–E9, do documento MutaCore) rodam, são
+> determinísticos e têm **27 testes** — mas os números do E1–E4 vêm de um mundo
+> **roteirizado** (`mundo.py` escreve as procedências à mão) e de um leitor que
+> **relê o que foi gravado literalmente**. Leia `docs/02_analise_achados.md` antes de
+> citar qualquer número; ele lista o que os resultados **não** sustentam.
 
 ---
 
@@ -25,16 +25,19 @@ tentam recuperar **família afetiva, procedência e uma carga explícita de 5,36
 4. `docs/04_plano_desenvolvimento.md` — P0–P3 com critério de aceite (P0.1–P0.4 concluídos).
 5. `docs/05_residuo_e_agencia.md` — resíduo, Landauer, τ e a **agência de mão dupla**
    (inclui a resposta a *"eu não sinto, eu computo"*).
+6. `docs/06_analise_mutacore.md` — análise do documento **MutaCore/RIC**: cada
+   afirmação reproduzida numericamente; o que é correto entrou no código, o que não
+   é ficou refutado com prova.
 
 ## Rodar
 
 ```bash
 pip install -r requirements.txt
-python run_all.py --so-testes    # 21 testes de sanidade (segundos)
-python run_all.py                # testes + E1-E6 + figuras (alguns minutos)
+python run_all.py --so-testes    # 27 testes de sanidade (segundos)
+python run_all.py                # testes + E1-E9 + figuras (alguns minutos)
 ```
 
-Saídas: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia}.png`
+Saídas: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore}.png`
 e `resultados/resultados.json`. No Windows `python` (não `python3`).
 
 ## Estrutura
@@ -47,9 +50,10 @@ ricemotions/                pacote importável
   glifo.py                  PIXEL/RIC: escrever, ler, grafos, alfabetos (sem I/O)
   residuo.py                E5: geração, roteamento (banda/simetria), Landauer, τ
   agente.py                 E6: transição + mão dupla (S*, w, τ realimentados)
-  experimentos.py           E1-E6, figuras, único lugar com I/O
+  homeostase.py             MutaCore: resíduo endógeno, S*/τ por telemetria, política
+  experimentos.py           E1-E9, figuras, único lugar com I/O
 tests/test_smoke.py         sanidade + regressão dos números publicados
-docs/                       5 documentos (arquitetura, análise, ponte, plano, resíduo/agência)
+docs/                       6 documentos (arquitetura, análise, ponte, plano, resíduo/agência, MutaCore)
 figs/                       figuras geradas
 resultados/                 resultados.json (regenerável)
 ```
@@ -111,7 +115,27 @@ resíduo sem tocar no orçamento de pixels.
 Com τ exausto (0,90) o sistema ganha **60% menos relações novas** sob estímulo fraco
 (0,067 → 0,027): "mau humor" operacional = incapacidade de incorporar informação.
 
-## Três limites que não se deve esquecer
+## Análise do documento MutaCore (04/10/2026 — `docs/06`)
+
+Regra adotada: **nenhuma afirmação foi aceita sem ser reproduzida numericamente.**
+Três mecanismos entraram no código; seis alegações não passaram na prova.
+
+| Afirmação do documento | Veredito | Prova |
+|---|---|---|
+| JSON do resíduo `R_L` (γ=0,8, α=0,15) | **reproduzido exatamente** | dif. máx. 8,7·10⁻⁷ (E7) |
+| telemetria → `S*` e → `τ`; política pela distância a `S*` | **correto, incorporado** | `homeostase.py`, `Agente.passo(carga_hw=)` |
+| carga com `d_min` baixo despenca em σ=0,40 | **correto** | 0,580 (`d_min=1`) × 0,927 (`d_min=8`) |
+| ~91,8% com **ruído** σ ≤ 0,30 | **falso** (afim sim, ruído não) | duro 0,167 em σ=0,30 = chance |
+| "nível cai, relacional segura" com resíduo | **não em γ=0,8** | Δ = +0,006; só a partir de γ×10 (−0,007 × −0,051) |
+| robô afetivo sobrevive mais (Camada 3) | **não mede nada** | 1000 × 1000 = 0,0%; morte impossível |
+| `S*` dinâmico = auto-preservação | **refutado pela ablação** | em regime letal custa **20,6 ciclos**; recarregar cedo ganha 36 |
+| cifra de fluxo com chave = resíduo | **16,6 bits** | força bruta: chave em ≈0,3 s |
+
+O `Φ` que o documento injeta tem magnitude **0,021** (10,4% da amplitude do sinal do
+roteiro) — contra `ΔT = +0,274` do nosso E6. E o código que ele manda colar em
+`mundo.py` gera `R_L ≡ 0` por construção (`docs/06` §8.1).
+
+## Quatro limites que não se deve esquecer
 
 1. **Roteiro, não emergência** — as procedências são cenários escritos à mão
    (`mundo.py`, aviso no próprio arquivo). O que se testa é o *código*, não a
@@ -123,12 +147,18 @@ Com τ exausto (0,90) o sistema ganha **60% menos relações novas** sob estímu
    `k_relax`, `β`, `J` foram escolhidos por nós, alguns *depois* de ver o dado
    (lista em `docs/05` §7). Não há pré-registro, IC nem teste de hipótese.
    Ver `docs/04`, P1.
+4. **Limitação conhecida no próprio código** — `glifo.text_to_digits` perde bytes
+   nulos iniciais (a mesma limitação do documento MutaCore, `docs/06` §8.6), caso
+   não coberto pelos testes. Corrigir mudaria a codificação dos dígitos e números já
+   publicados; fica documentado em vez de corrigido às cegas.
 
 ## Próximo passo
 
 `docs/04_plano_desenvolvimento.md`: **P0.5** (CI) e **P1** — ICs e teste de hipótese
 para E1–E4, baseline séria (logística/MLP), transformações perceptivas reais, faixa
-de neutro. Depois **P2.1**, trocar `mundo.episode()` por `teoa/core.py` de verdade.
+de neutro e **P1.7** (carga como canal: espalhamento + decodificador, a única ideia
+do MutaCore que ficou como trabalho futuro). Depois **P2.1**, trocar
+`mundo.episode()` por `teoa/core.py` de verdade.
 
 ---
 
@@ -144,8 +174,9 @@ A 6-channel × 32-step episode becomes **valence + activation**, is rendered as 
 by a relational reader that decodes **affective family, provenance and an explicit
 5.36-bit payload**.
 
-**Status: exploratory prototype.** Six experiments (E1–E6) run deterministically and
-are covered by **21 tests**, but the world is **hand-scripted** and the reader
+**Status: exploratory prototype.** Six experiments (E1–E6) plus three external
+verification runs (E7–E9, from the MutaCore document) run deterministically and
+are covered by **27 tests**, but the world is **hand-scripted** and the reader
 **re-reads what the writer stored literally**. Read `docs/02_analise_achados.md`
 before quoting any number: it lists what the results do **not** support.
 
@@ -172,6 +203,21 @@ same as the band — / 1.000 / 0 rows**), a Landauer-style feedback filter (tens
 fewer *new* relations under a weak stimulus when exhausted), and an
 **operational agency criterion**: same state + different residue history →
 transition differs by **0.00615** when closed vs exactly **0.00000** when open.
+
+**New in this cycle (`docs/06`):** the attached *MutaCore/RIC* document was analysed
+claim by claim — nothing was accepted without being reproduced numerically. The
+published residue JSON is reproduced exactly (max diff 8.7e-7); telemetry → `S*`/`τ`
+and the distance-to-`S*` policy were **adopted** as pure functions
+(`ricemotions/homeostase.py`, optional `Agente.passo(carga_hw=)` hook, default 0 ⇒
+published numbers unchanged). Refuted with proof: the `91.8 %` robustness claim
+holds for affine transforms (0.898–0.919) but not for noise (0.167 at σ=0.30 for the
+hard reader); the residue injection is inert (max |Φ| = 0.021 = 10.4 % of the
+script's signal, and the snippet the document tells us to paste into `mundo.py`
+yields `R_L ≡ 0`); the survival benchmark reports **0 %** gain because both robots
+live 1000/1000 cycles (death is structurally impossible — T fixed point 0.840 < 0.95),
+and in a lethal regime the dynamic `S*` **costs** 20.6 cycles while early recharging
+**gains** 36; the residue-keyed cipher has **16.61 bits** of key space and falls to
+brute force in ≈0.3 s.
 
 Full English documentation: [`README.en.md`](README.en.md). Architecture, findings,
 TEOA↔PIXEL mapping and roadmap in `docs/` (Portuguese).

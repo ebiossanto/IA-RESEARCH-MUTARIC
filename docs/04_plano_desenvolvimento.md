@@ -9,7 +9,7 @@ para não virar lista infinita. Esforço estimado para uma pessoa, com o código
 
 | # | Tarefa | Pronto quando | status (04/10/2026) |
 |---|---|---|---|
-| P0.1 | `python run_all.py` roda limpo em Windows e Linux | testes + experimentos verdes em ambas as plataformas | **feito** — 21/21 testes |
+| P0.1 | `python run_all.py` roda limpo em Windows e Linux | testes + experimentos verdes em ambas as plataformas | **feito** — 27/27 testes |
 | P0.2 | `codebook_up_to_isomorfismo()` entra no E3 | `carga_permutacao` mostra `canonicalizado ≈ 1,0` e a curva `bits × σ` é regenerada; JSON e figura atualizados | **feito** — `carga_isomorfismo`: 0,208 → **1,000** limpo e sob permutação (`docs/05` §5) |
 | P0.3 | Decodificação **soft** do grafo (ponderar bit por `\|cos\| − τ`) | `6c_relacional` em σ=0,10 **> 0,6** (hoje 0,334 = chance), sem piorar o caso limpo | **feito** — `body_cont` + de-atenuação + pesos: σ=0,10 → **0,733** (limpo 0,919 → 0,892, ver `docs/05` §2.2) |
 | P0.4 | Curva acurácia × σ (hoje há pontos isolados) | gráfico com 6+ valores de σ para cada método | **feito** — 7 valores × 4 leitores, `figs/curva_sigma.png` |
@@ -32,6 +32,24 @@ conceituais abertos em `03`:
 | agência de mão dupla, com critério operacional | `docs/05` §6 (E6) |
 | resposta a "eu não sinto, eu computo" | `docs/05` §8 |
 
+### Segundo fechamento (04/10/2026, ciclo MutaCore)
+
+`docs/06_analise_mutacore.md` analisa o documento **`MUTACORE _ RIC.md`** anexado pelo
+usuário. Regra usada: **nada é aceito sem ser reproduzido numericamente**. Resultado:
+3 mecanismos incorporados, 6 alegações refutadas com prova.
+
+| item | onde |
+|---|---|
+| resíduo **endógeno** (`ΔH_L` da própria transição → `R_L` → `Φ`) | `homeostase.py` + `docs/06` §3 (E7) |
+| telemetria → `S*` e telemetria → `τ` (funções puras + `Agente.passo(carga_hw=)`) | `homeostase.py`, `docs/06` §2 |
+| política pela distância a `S*` e o robô do benchmark com 3 interruptores | `homeostase.py`, `docs/06` §4 (E8) |
+| prova de que a chave cifrada pelo resíduo tem 16,6 bits | `docs/06` §5 (E9) |
+| correção da alegação "~91,8% com σ ≤ 0,30" | `docs/06` §6 |
+| dose-resposta do resíduo (γ = 0,8 / ×10 / ×100) e teste da previsão "nível cai, relacional segura" | `docs/06` §7 (E7) |
+| bug: o código da §B injeta `R_L ≡ 0` | `docs/06` §8.1 |
+
+Novos números: `E7_residuo_mutacore`, `E8_sobrevivencia`, `E9_chave_residuo`;
+figura `figs/mutacore.png`; testes 21 → **27**.
 
 ## P1 — Fazer a afirmação sobreviver a escrutínio (1–2 semanas)
 
@@ -42,7 +60,8 @@ conceituais abertos em `03`:
 | P1.3 | Transformações perceptivas reais: corte de linhas/colunas, redimensionar 48×32 → 24×16, JPEG/quantização espacial, oclusão de blocos | mesma tabela de robustez com as novas colunas |
 | P1.4 | Faixa de neutro na valência (`|v| < ε` ⇒ família indeterminada) | `consistencia_familia_vs_valencia` reportado **com** a taxa de "indeterminado" |
 | P1.5 | Fixar âncoras e reduzir a busca canônica do corpo (24 perms. ou forma canônica verdadeira) | `permutacao_corpo` recupera > 0,85 (hoje 0,666) |
-| P1.6 | Documentar **graus de liberdade do pesquisador** (τ, `d_min`, janelas 8/8, `d_ref`, `α`, `β`, `noise`, distrator 30%) | lista numerada em `docs/` — mesma disciplina do TEOA `docs/05` |
+| P1.6 | Documentar **graus de liberdade do pesquisador** (τ, `d_min`, janelas 8/8, `d_ref`, `α`, `β`, `noise`, distrator 30%, **γ do resíduo endógeno**, **`carga_hw`**) | lista numerada em `docs/` — mesma disciplina do TEOA `docs/05` |
+| P1.7 | Carga como canal: espalhamento por portadora + **decodificador** (ideia do MutaCore §F, recusada lá por não ser verificável — `docs/06` §8.5/§9) | `decode_payload` lê a camada espalhada e `carga_capacidade` não piora |
 
 ## P2 — Ligar o TEOA de verdade (2–4 semanas)
 
@@ -75,8 +94,10 @@ o relacional continuar pior, a conclusão é que a hipótese relacional **não s
 
 ## Definição de pronto do projeto (versão 0.2)
 
-- [x] **P0.1–P0.4 fechados** (04/10/2026): `run_all.py` verde com 21 testes, leitor
+- [x] **P0.1–P0.4 fechados** (04/10/2026): `run_all.py` verde com 27 testes, leitor
       robusto a ruído, curva acurácia × σ e carga isomórfica — `docs/05` §2 e §5.
+- [x] **Análise externa reproduzida com provas** (04/10/2026): documento MutaCore —
+      o que é correto entrou no código, o que não é ficou refutado — `docs/06`, E7–E9.
 - [ ] `run_all.py` verde em CI. *(P0.5, pendente)*
 - [ ] Números do E1–E4 com IC e teste de hipótese.
 - [ ] Resultado nulo publicado com a mesma proeminência do resultado positivo.

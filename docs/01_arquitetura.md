@@ -35,13 +35,15 @@ glifo.patches()          16×32 (média dos 3 pixels de cada patch)
 | `ricemotions/glifo.py` | Escrever e ler a imagem; alfabetos; grafos; leitor contínuo; simetria canônica | numpy, scipy (hadamard), `mundo` |
 | `ricemotions/residuo.py` | E5: gerar/rotear resíduo (banda, simetria), energia Landauer, τ efetivo | numpy, `mundo` |
 | `ricemotions/agente.py` | E6: transição com acoplamento `J`, `modular()` (mão dupla), critério | numpy, `mundo`, `glifo`, `residuo` |
-| `ricemotions/experimentos.py` | E1–E6, figuras, I/O de disco | os acima, matplotlib, json |
-| `tests/test_smoke.py` | Sanidade dos contratos + regressões dos números publicados (21 testes) | o pacote |
+| `ricemotions/homeostase.py` | MutaCore (§B–§E): resíduo **endógeno** `ΔH_L→R_L→Φ`, telemetria→`S*`/`τ`, política, robô do benchmark | numpy, `mundo` |
+| `ricemotions/experimentos.py` | E1–E9, figuras, I/O de disco | os acima, matplotlib, json |
+| `tests/test_smoke.py` | Sanidade dos contratos + regressões dos números publicados (27 testes) | o pacote |
 | `run_all.py` | Ponto de entrada único | subprocess |
 
-**Regra de organização:** `mundo`, `glifo`, `residuo` e `agente` não fazem I/O;
-só `experimentos` escreve em disco (`figs/`, `resultados/`). Isso mantém a
-simulação testável.
+**Regra de organização:** `mundo`, `glifo`, `residuo`, `agente` e `homeostase` não
+fazem I/O; só `experimentos` escreve em disco (`figs/`, `resultados/`). Isso mantém a
+simulação testável. A única exceção em `homeostase` é `telemetria()`, **opcional e
+nunca usada** por teste ou experimento (leitura de hardware é não-determinística).
 
 ## 3. Formatos e invariantes
 
@@ -109,6 +111,11 @@ fixo) e da CARGA sempre por inteiro.
 | **curva σ** | quanto o limiar fixo colapsa sob ruído? | `curva_sigma` (4 leitores × 7 valores de σ) |
 | **E5** | a mesma energia de resíduo, três destinos: espalhado / banda / simetria | `E5_residuo` (classe, carga, ordinal do resíduo) |
 | **E6** | a leitura realimenta as PRÓPRRIAS regras de transição? | `E6_agencia` (mão dupla, Landauer, τ, reatividade) |
+| **E7** | o resíduo do MutaCore reproduz o JSON publicado? e a previsão "nível cai, relacional segura" vale aqui? | `E7_residuo_mutacore` (dose-resposta γ=0,8/×10/×100) |
+| **E8** | o benchmark de sobrevivência mede emoção? (reprodução fiel + ablação 2×2×2 + varredura) | `E8_sobrevivencia` (ciclos, limites analíticos, efeito do `S*`) |
+| **E9** | a cifra cuja chave é o resíduo tem quantos bits? | `E9_chave_residuo` (espaço de chave, força bruta) |
+
+Análise, vereditos e provas de E7–E9: `docs/06_analise_mutacore.md`.
 
 Boas práticas **já** seguidas aqui (manter):
 
@@ -126,7 +133,7 @@ python -m ricemotions.experimentos
 python tests/test_smoke.py
 ```
 
-- Saídas: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia}.png`
+- Saídas: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore}.png`
   e `resultados/resultados.json`.
 - As seeds são fixas (`0,1,2,3,5,9,777+seed`), então o JSON regenerado é
   **determinístico** para uma mesma versão de numpy/scipy.
@@ -142,9 +149,14 @@ python tests/test_smoke.py
 | `resultados.json` gravado junto das figuras | `resultados/resultados.json` |
 | consistência do mundo regenerava o conjunto de teste inteiro | usa os episódios já gerados (`build(...)` devolve `eps`) |
 | código morto em `figuras()` | removido |
-| nenhum teste | `tests/test_smoke.py` (**21 testes**) |
+| nenhum teste | `tests/test_smoke.py` (**27 testes** hoje) |
 | E5 usava `Ite[:300]`, mas o conjunto de teste é **ordenado por classe** (só classe 0) | amostragem estratificada 50 × 6 (`e5_residuo`) |
 | `canon_order` só aceitava `(n, T)`, estourando no bloco `(n, R, T)` | aceita ambos e usa a média das 3 linhas redundantes |
 | o critério de mão dupla era contaminado pela relaxação dupla de `s` | snapshots do estado interno entre as duas chamadas (`criterio_mao_dupla`) |
 
 Os **números** dos experimentos não foram alterados por essas correções.
+
+Ciclo seguinte (MutaCore): `docs/06` §8 lista as correções de **código do documento
+analisado** (snippet inerte, `cpu_percent` zerado, `landauer_stress` não usado) e uma
+limitação conhecida **nossa**, `glifo.text_to_digits` perde bytes nulos iniciais —
+registrada em vez de corrigida às cegas, porque mudaria números já publicados.

@@ -11,7 +11,11 @@ Ele também responde, no §8, ao argumento *"eu não sinto, eu computo"*.
 
 Todos os números aqui vêm de `resultados/resultados.json` (chaves `curva_sigma`,
 `carga_isomorfismo`, `E5_residuo`, `E6_agencia`) e são regenerados por
-`python run_all.py`. Testes: `tests/test_smoke.py`, 21/21.
+`python run_all.py`. Testes: `tests/test_smoke.py`.
+
+A análise do documento externo **MutaCore/RIC** — que propõe o mesmo filtro de
+Landauer, uma homeostase de hardware e um benchmark de sobrevivência — está em
+`docs/06_analise_mutacore.md` (E7–E9, testes 27/27).
 
 ---
 
@@ -378,8 +382,9 @@ entre as causas da próxima transição — e há um número que prova a diferen
 | P0.2 `codebook_up_to_isomorfismo` no E3 | **feito** — `carga_isomorfismo`, 0,208 → 1,000 | §5, `resultados.json` |
 | P0.3 decodificação soft | **feito** — `body_cont` + correção + pesos | §2 |
 | P0.4 curva acurácia × σ | **feito** — 7 valores de σ | §2.2, `curva_sigma.png` |
-| P0.1 `run_all.py` limpo | **feito** — 21/21 testes | `tests/test_smoke.py` |
+| P0.1 `run_all.py` limpo | **feito** — hoje 27/27 testes | `tests/test_smoke.py` |
 | P0.5 CI (GitHub Actions) | **não feito** | — |
+| P1.7 carga espalhada + decodificador | **origem**: ideia recusada do MutaCore (não verificável lá) | `docs/06` §8.5/§9, `docs/04` P1.7 |
 | P2.2 "Agente" | **parcial** — existe `agente.py` com política e transição, mas ainda sem custo/recompensa nem `teoa.core` | §6 |
 | L2 (sem agente) | **parcialmente fechada** | `docs/03` |
 | L3 (sem feedback) | **parcialmente fechada** — há feedback do leitor sobre as *regras*, mas ainda não sobre um *segundo* agente | `docs/03` |

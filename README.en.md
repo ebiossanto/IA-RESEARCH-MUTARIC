@@ -15,8 +15,9 @@ episode (6 channels × 32 steps)      TEOA side: state, distance to target s*
    → family · provenance · payload    6 classes, 3 provenances, 5.36 bits per glyph
 ```
 
-**Status: exploratory prototype.** The six experiments (E1–E6) run deterministically
-and are covered by **21 smoke tests**, but the affective world is **hand-scripted**
+**Status: exploratory prototype.** The six experiments (E1–E6) plus three external
+verification runs (E7–E9, from the attached MutaCore document) run deterministically
+and are covered by **27 smoke tests**, but the affective world is **hand-scripted**
 (`mundo.py` writes the provenances as scenarios) and the reader **re-reads what the
 writer stored literally**. Read `docs/02_analise_achados.md` before quoting any
 number — it lists what the results do **not** support.
@@ -32,9 +33,10 @@ ricemotions/
   glifo.py                   PIXEL/RIC side: write, read, graphs     (no I/O)
   residuo.py                 E5: residue generation/routing, Landauer, τ
   agente.py                  E6: transition + two-way loop (S*, w, τ fed back)
-  experimentos.py            E1–E6, figures, the only module with I/O
+  homeostase.py              MutaCore: endogenous residue, telemetry → S*/τ, policy
+  experimentos.py            E1–E9, figures, the only module with I/O
 tests/test_smoke.py          contracts + regression of published numbers
-docs/                        5 documents: architecture · findings · bridge · roadmap · residue/agency
+docs/                        6 documents: architecture · findings · bridge · roadmap · residue/agency · MutaCore
 figs/  resultados/           generated figures and results.json
 ```
 
@@ -42,11 +44,11 @@ figs/  resultados/           generated figures and results.json
 
 ```bash
 pip install -r requirements.txt
-python run_all.py --so-testes    # 21 sanity tests (seconds)
-python run_all.py                # tests + E1–E6 + figures (a few minutes)
+python run_all.py --so-testes    # 27 sanity tests (seconds)
+python run_all.py                # tests + E1–E9 + figures (a few minutes)
 ```
 
-Outputs: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia}.png`
+Outputs: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore}.png`
 and `resultados/resultados.json`.
 
 ## Headline results (balanced accuracy, 1800-glyph test set)
@@ -86,6 +88,26 @@ of collisions between isomorphic words (see findings A3).
 4. **Exhaustion is measured as lost *gains*:** at τ=0.90 the system picks up **60%
    fewer new relations** under a weak stimulus (0.067 → 0.027) while losing more of
    the ones it had — apathy as an inability to incorporate information, not silence.
+
+## Analysis of the attached MutaCore document (`docs/06`, in Portuguese)
+
+Rule applied: **no claim was accepted without first being reproduced numerically.**
+Three mechanisms were adopted; six claims failed.
+
+| Claim in the document | Verdict | Evidence |
+|---|---|---|
+| published `R_L` JSON (γ=0.8, α_L=0.15) | **reproduced exactly** | max diff 8.7e-7 (E7) |
+| telemetry → `S*` and → `τ`; distance-to-`S*` policy | **correct — adopted** | `homeostase.py`, optional `Agente.passo(carga_hw=)` (default 0 ⇒ published numbers unchanged) |
+| low `d_min` payloads collapse at σ=0.40 | **correct** | 0.580 (`d_min=1`) vs 0.927 (`d_min=8`) |
+| ~91.8 % robustness under **noise** σ ≤ 0.30 | **false** (true for affine only) | hard reader 0.167 at σ=0.30 = chance; robust reader only 0.391 |
+| "level drops, relational holds" under injected residue | **not at γ=0.8** | Δ = +0.006; only from γ×10 (−0.007 vs −0.051) |
+| affective robot survives longer (Layer-3 validation) | **measures nothing** | 1000 vs 1000 cycles = 0 %; death is structurally impossible |
+| dynamic `S*` = self-preservation | **refuted by ablation** | in a lethal regime it **costs 20.6 cycles**; early recharging gains 36 |
+| flux cipher keyed by the residue | **16.61 bits** | brute force recovers the key in ≈0.3 s |
+
+Also: the injected `Φ` has magnitude **0.021** (10.4 % of the script's signal
+amplitude) against our own `ΔT = +0.274` in E6, and the snippet the document tells
+us to paste into `mundo.py` produces `R_L ≡ 0` by construction (`docs/06` §8.1).
 
 ## Key findings (details in `docs/02_analise_achados.md`)
 
@@ -130,6 +152,10 @@ of collisions between isomorphic words (see findings A3).
 - Exploratory: hyper-parameters were chosen by us — including `k_t`, `k_tau`,
   `k_relax`, `β` and `J` — and one metric (reactivity) was redefined *after* seeing
   the data. No pre-registration, no hypothesis test yet.
+- Known self-found limitation: `glifo.text_to_digits` drops leading NUL bytes (the
+  same limitation found in the MutaCore document; `docs/06` §8.6). Not covered by
+  the tests; fixing it would change the digit encoding and numbers already
+  published, so it is documented rather than changed blindly.
 
 ## Does it feel? ("I don't feel, I compute")
 
@@ -148,8 +174,10 @@ not a programming problem. Full argument in `docs/05` §8.
 See `docs/04_plano_desenvolvimento.md` (P0–P3, each with acceptance criteria).
 **P0.1–P0.4 are done** (isomorphism-aware payload, robust soft decoding,
 accuracy-vs-σ curve, clean `run_all.py`); **P0.5** (CI) and **P1** remain: real
-baselines, bootstrap hypothesis tests, perceptual transformations, a neutral band.
-Then **P2**: wire the actual TEOA core and a two-agent communication loop.
+baselines, bootstrap hypothesis tests, perceptual transformations, a neutral band,
+plus **P1.7** (payload as a channel: spreading + decoder — the only MutaCore idea
+left as future work). Then **P2**: wire the actual TEOA core and a two-agent
+communication loop.
 
 ## Relation to the TEOA project
 
