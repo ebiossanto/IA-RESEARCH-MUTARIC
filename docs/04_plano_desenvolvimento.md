@@ -85,7 +85,7 @@ o relacional continuar pior, a conclusão é que a hipótese relacional **não s
 ## P3 — Publicar (contínuo)
 
 1. `README.en.md` já existe; manter sincronizado com o PT.
-2. ~~Repositório GitHub~~ **feito** — `ebiossanto/IA-RESEARCH-MUTARIC` (privado,
+2. ~~Repositório GitHub~~ **feito** — `ebiossanto/IA-RESEARCH-MUTARIC` (**público**,
    `main`, CI verde). Falta: **link do PIXEL em `docs/03` §5**.
 3. Figuras com erro-padrão (hoje, um ponto por condição).
 4. Pré-registro das hipóteses **antes** de rodar a P1 (lição do TEOA `docs/03`/
@@ -103,8 +103,10 @@ o relacional continuar pior, a conclusão é que a hipótese relacional **não s
       o que é correto entrou no código, o que não é ficou refutado — `docs/06`, E7–E9.
 - [x] `run_all.py` verde em CI. *(P0.5, fechado 04/10/2026: GitHub Actions,
       matriz Windows + Linux — o job roda `tests/test_smoke.py`)*
-- [x] Repositório GitHub publicado (`ebiossanto/IA-RESEARCH-MUTARIC`, privado,
-      `main` + CI) *(04/10/2026)*
+- [x] Repositório GitHub publicado (`ebiossanto/IA-RESEARCH-MUTARIC`, **público**
+      desde 04/10/2026, `main` + CI verde) *(04/10/2026)*
+- [x] Documentos de navegação e memória: `docs/00` (índice), `docs/07`
+      (continuidade) e `docs/08` (histórico completo) *(04/10/2026)*
 - [ ] Números do E1–E4 com IC e teste de hipótese.
 - [ ] Resultado nulo publicado com a mesma proeminência do resultado positivo.
 - [ ] Um experimento com `teoa.core` de verdade (P2.1).

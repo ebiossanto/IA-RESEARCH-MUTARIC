@@ -12,7 +12,7 @@
 
 | item | estado |
 |---|---|
-| Repositório | **`github.com/ebiossanto/IA-RESEARCH-MUTARIC`** (privado), branch `main` |
+| Repositório | **`github.com/ebiossanto/IA-RESEARCH-MUTARIC`** (**público** desde 04/10/2026), branch `main` |
 | Código | pacote `ricemotions/` — 6 módulos, nenhum com I/O fora de `experimentos.py` |
 | Experimentos | **E1–E9** (E1–E4 núcleo, E5 resíduo, E6 agência, E7–E9 verificação externa MutaCore) |
 | Testes | **27/27** (`python tests/test_smoke.py`), regressão dos números publicados |
@@ -116,8 +116,10 @@ por item. A ordem recomendada para retomar:
 - **Escolhas pós-hoc não listadas** (P1.6): parte delas é conhecida, parte não —
   isso é pendência aberta e deve ser resolvida antes de qualquer afirmação
   confirmatória.
-- O repositório está **privado**; torná-lo público é decisão que deve acompanhar
-  a revisão dos graus de liberdade do pesquisador (P1.6).
+- O repositório é **público** desde 04/10/2026 (pedido do autor). Pendência que
+  acompanha essa decisão: **P1.6** (graus de liberdade do pesquisador) segue aberta —
+  se algum número publicado for revisto, a mudança deve ser anunciada no mesmo
+  lugar onde o número foi publicado.
 
 ---
 
@@ -127,7 +129,7 @@ This document is the **hand-off**: where the work stopped (04/10/2026), how to
 resume in 10 minutes (`pip install -r requirements.txt` → `python run_all.py
 --so-testes` → 27/27), and what is already decided and must not be reopened
 without numerical reproduction. Repository:
-`github.com/ebiossanto/IA-RESEARCH-MUTARIC` (private, branch `main`), CI on
+`github.com/ebiossanto/IA-RESEARCH-MUTARIC` (public, branch `main`), CI on
 Windows + Linux. The next concrete step is **P1.1** (serious baselines with
 bootstrap CIs), then P1.2 (paired hypothesis test) and P1.3 (perceptual
 transformations); P0.1–P0.5 are closed. External pendencies live outside this

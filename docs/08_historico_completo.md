@@ -34,7 +34,7 @@ um roteiro?* (`docs/02` A6).
 | **1** | `389272a` | reorganização: pacote `ricemotions/` importável, imports absolutos, `RAIZ/figs`, **21 testes**, `README`/`README.en`, `docs/01`–`docs/04`; números **não alterados** |
 | **2** | `fdf6203` | **E5 resíduo, E6 agência, leitor robusto** (`docs/05`); fecha P0.1–P0.4; incorpora os 3 pedidos do usuário (Landauer, τ, isomorfismo); testes 21 |
 | **3** | `8800c9f` | **ciclo MutaCore**: análise do anexo `MUTACORE _ RIC.md` com provas (`docs/06`), `homeostase.py`, E7–E9, testes 21 → **27**, `figs/mutacore.png` |
-| **4** | `d88ef3f` | **GitHub + CI**: repositório `ebiossanto/IA-RESEARCH-MUTARIC` (privado), `.github/workflows/ci.yml` (Windows + Linux, 27/27), badge, revisão de consistência (P0.5 fecha) |
+| **4** | `d88ef3f` | **GitHub + CI**: repositório `ebiossanto/IA-RESEARCH-MUTARIC` (privado na época; **tornado público** em 04/10/2026), `.github/workflows/ci.yml` (Windows + Linux, 27/27), badge, revisão de consistência (P0.5 fecha) |
 | **5** (atual) | — | **organização final**: `docs/00` (índice), `docs/07` (continuidade), `docs/08` (este), auditoria de consistência entre documentos, chave `tau_medio_landauer_off` no JSON |
 
 Linha do tempo interna (ciclos 1–3): as datas e o "antes/depois" de cada correção
@@ -73,7 +73,7 @@ com 139 grafos) e `demo_mensagem` ("Ganhei!", 11 glifos, 11/11 símbolos até σ
 - **Ciclo 3 (`docs/06`):** verificação externa — 18 afirmações, 8 confirmadas,
   **6 refutadas**, 4 parciais/não verificáveis; 4 mecanismos novos no código
   (7 entradas, `docs/06` §2) e 6 recusas documentadas (§9).
-- **Ciclo 4:** publicação — repositório privado, CI verde nas duas plataformas,
+- **Ciclo 4:** publicação — repositório (privado, hoje **público**), CI verde nas duas plataformas,
   badge e revisão de consistência (fecha P0.5).
 - **Ciclo 5:** organização — índice, continuidade, este relatório, auditoria
   (tabela abaixo) e a chave de JSON que faltava.
@@ -165,7 +165,7 @@ Os achados que **pioraram a própria história** e por isso estão publicados:
 
 ## 6. Estado atual e fila
 
-- **Repositório:** `github.com/ebiossanto/IA-RESEARCH-MUTARIC` (privado, `main`);
+- **Repositório:** `github.com/ebiossanto/IA-RESEARCH-MUTARIC` (**público**, `main`);
   CI verde em Windows e Ubuntu (27/27); 5 commits.
 - **Código:** 6 módulos (`mundo`, `glifo`, `residuo`, `agente`, `homeostase`,
   `experimentos`) + `tests/` (27) + `run_all.py`.
