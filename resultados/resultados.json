@@ -1,0 +1,232 @@
+{
+ "n_train": 2400,
+ "n_val": 900,
+ "n_test": 1800,
+ "carga": {
+  "d_min": 4,
+  "palavras": 41,
+  "bits": 5.357552004618084
+ },
+ "consistencia_familia_vs_valencia": 0.9861111111111112,
+ "varredura_tau_validacao": {
+  "0.4": {
+   "acc6": 0.8777777777777778,
+   "grafos": 370
+  },
+  "0.5": {
+   "acc6": 0.9066666666666666,
+   "grafos": 240
+  },
+  "0.6": {
+   "acc6": 0.9244444444444445,
+   "grafos": 175
+  },
+  "0.7": {
+   "acc6": 0.9255555555555555,
+   "grafos": 139
+  },
+  "0.8": {
+   "acc6": 0.8811111111111112,
+   "grafos": 105
+  }
+ },
+ "tau": 0.7,
+ "transformacoes": {
+  "limpo": {
+   "6c_relacional": 0.918888888888889,
+   "6c_nivel": 0.7861111111111111,
+   "6c_delta": 0.9766666666666666,
+   "6c_nivel+delta": 1.0,
+   "3c_relacional": 0.9855555555555555,
+   "3c_nivel": 0.8311111111111111,
+   "3c_delta": 0.9877777777777778,
+   "3c_nivel+delta": 1.0,
+   "fam_nivel": 0.9861111111111112,
+   "fam_polaridade": 1.0,
+   "pipeline_completo": 0.9855555555555556,
+   "carga_acc": 1.0
+  },
+  "ruído σ=0.05": {
+   "6c_relacional": 0.7511111111111112,
+   "6c_nivel": 0.7872222222222222,
+   "6c_delta": 0.9777777777777779,
+   "6c_nivel+delta": 1.0,
+   "3c_relacional": 0.8433333333333334,
+   "3c_nivel": 0.8322222222222222,
+   "3c_delta": 0.9861111111111112,
+   "3c_nivel+delta": 1.0,
+   "fam_nivel": 0.9861111111111112,
+   "fam_polaridade": 1.0,
+   "pipeline_completo": 0.8433333333333333,
+   "carga_acc": 1.0
+  },
+  "ruído σ=0.10": {
+   "6c_relacional": 0.3338888888888889,
+   "6c_nivel": 0.7877777777777778,
+   "6c_delta": 0.9733333333333333,
+   "6c_nivel+delta": 1.0,
+   "3c_relacional": 0.5894444444444444,
+   "3c_nivel": 0.8283333333333334,
+   "3c_delta": 0.9783333333333333,
+   "3c_nivel+delta": 1.0,
+   "fam_nivel": 0.9866666666666667,
+   "fam_polaridade": 1.0,
+   "pipeline_completo": 0.5894444444444444,
+   "carga_acc": 1.0
+  },
+  "ruído σ=0.20": {
+   "6c_relacional": 0.17222222222222225,
+   "6c_nivel": 0.7761111111111111,
+   "6c_delta": 0.9583333333333334,
+   "6c_nivel+delta": 0.9994444444444445,
+   "3c_relacional": 0.37833333333333335,
+   "3c_nivel": 0.8227777777777778,
+   "3c_delta": 0.9638888888888889,
+   "3c_nivel+delta": 0.9994444444444445,
+   "fam_nivel": 0.9877777777777778,
+   "fam_polaridade": 1.0,
+   "pipeline_completo": 0.37833333333333335,
+   "carga_acc": 1.0
+  },
+  "brilho ×0.7 +0.1": {
+   "6c_relacional": 0.918888888888889,
+   "6c_nivel": 0.5094444444444445,
+   "6c_delta": 0.9261111111111111,
+   "6c_nivel+delta": 0.9983333333333334,
+   "3c_relacional": 0.9855555555555555,
+   "3c_nivel": 0.6572222222222223,
+   "3c_delta": 0.9416666666666667,
+   "3c_nivel+delta": 1.0,
+   "fam_nivel": 0.9594444444444444,
+   "fam_polaridade": 1.0,
+   "pipeline_completo": 0.9855555555555556,
+   "carga_acc": 1.0
+  },
+  "descalibração por linha": {
+   "6c_relacional": 0.918888888888889,
+   "6c_nivel": 0.5494444444444445,
+   "6c_delta": 0.975,
+   "6c_nivel+delta": 0.9838888888888889,
+   "3c_relacional": 0.9855555555555555,
+   "3c_nivel": 0.6672222222222222,
+   "3c_delta": 0.9861111111111112,
+   "3c_nivel+delta": 0.9822222222222222,
+   "fam_nivel": 0.8911111111111111,
+   "fam_polaridade": 1.0,
+   "pipeline_completo": 0.9855555555555556,
+   "carga_acc": 1.0
+  },
+  "desfoque temporal": {
+   "6c_relacional": 0.8983333333333334,
+   "6c_nivel": 0.7861111111111111,
+   "6c_delta": 0.976111111111111,
+   "6c_nivel+delta": 1.0,
+   "3c_relacional": 0.9922222222222222,
+   "3c_nivel": 0.8311111111111111,
+   "3c_delta": 0.9872222222222222,
+   "3c_nivel+delta": 1.0,
+   "fam_nivel": 0.9861111111111112,
+   "fam_polaridade": 1.0,
+   "pipeline_completo": 0.9922222222222223,
+   "carga_acc": 0.9572222222222222
+  }
+ },
+ "permutacao_corpo": {
+  "E,T fixas (âncoras)": {
+   "relacional/padrão": 0.34453439527072066,
+   "relacional/âncoras (24 perm.)": 0.6726988390031868,
+   "relacional/canonicalizado (720)": 0.6655329774894992,
+   "nivel/padrão": 0.401428816136761,
+   "delta/padrão": 0.5990738833656085
+  },
+  "permutação total": {
+   "relacional/padrão": 0.19268774703557312,
+   "relacional/canonicalizado (720)": 0.6655329774894992,
+   "nivel/padrão": 0.25407316422909193,
+   "delta/padrão": 0.29437819595603604
+  }
+ },
+ "carga_capacidade": {
+  "d_min=1": {
+   "palavras": 203,
+   "bits": 7.6653359171851765,
+   "σ=0.0": 1.0,
+   "σ=0.1": 1.0,
+   "σ=0.2": 1.0,
+   "σ=0.3": 0.9833333333333333,
+   "σ=0.4": 0.58,
+   "miscal": 1.0,
+   "brilho": 1.0
+  },
+  "d_min=2": {
+   "palavras": 113,
+   "bits": 6.820178962415188,
+   "σ=0.0": 1.0,
+   "σ=0.1": 1.0,
+   "σ=0.2": 1.0,
+   "σ=0.3": 0.9866666666666667,
+   "σ=0.4": 0.6033333333333334,
+   "miscal": 1.0,
+   "brilho": 1.0
+  },
+  "d_min=4": {
+   "palavras": 41,
+   "bits": 5.357552004618084,
+   "σ=0.0": 1.0,
+   "σ=0.1": 1.0,
+   "σ=0.2": 1.0,
+   "σ=0.3": 1.0,
+   "σ=0.4": 0.7266666666666667,
+   "miscal": 1.0,
+   "brilho": 1.0
+  },
+  "d_min=6": {
+   "palavras": 15,
+   "bits": 3.9068905956085187,
+   "σ=0.0": 1.0,
+   "σ=0.1": 1.0,
+   "σ=0.2": 1.0,
+   "σ=0.3": 1.0,
+   "σ=0.4": 0.87,
+   "miscal": 1.0,
+   "brilho": 1.0
+  },
+  "d_min=8": {
+   "palavras": 6,
+   "bits": 2.584962500721156,
+   "σ=0.0": 1.0,
+   "σ=0.1": 1.0,
+   "σ=0.2": 1.0,
+   "σ=0.3": 1.0,
+   "σ=0.4": 0.9266666666666666,
+   "miscal": 1.0,
+   "brilho": 1.0
+  }
+ },
+ "carga_permutacao": {
+  "padrao": 0.11666666666666667,
+  "canonicalizado": 0.20833333333333334,
+  "classes_de_isomorfismo": 11,
+  "bits_max_canonicalizado": 3.4594316186372973
+ },
+ "demo_mensagem": {
+  "mensagem": "Ganhei!",
+  "glifos": 11,
+  "base": 41,
+  "σ=0.0": {
+   "texto": "Ganhei!",
+   "simbolos_certos": 11,
+   "familia_certa": 1.0
+  },
+  "σ=0.2": {
+   "texto": "Ganhei!",
+   "simbolos_certos": 11,
+   "familia_certa": 1.0
+  },
+  "σ=0.3": {
+   "texto": "Ganhei!",
+   "simbolos_certos": 11,
+   "familia_certa": 1.0
+  }
+ }
+}
