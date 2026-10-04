@@ -10,9 +10,10 @@ Um **episódio** de 6 canais × 32 passos vira **valência + ativação** (TEOA)
 renderizado como um **glifo 48×32** e é lido de volta por um leitor relacional que
 tentam recuperar **família afetiva, procedência e uma carga explícita de 5,36 bits**.
 
-> **Status: protótipo exploratório.** Os seis experimentos principais (E1–E6) mais
-> os três de verificação externa (E7–E9, do documento MutaCore) rodam, são
-> determinísticos e têm **27 testes** — mas os números do E1–E4 vêm de um mundo
+> **Status: protótipo exploratório.** Os seis experimentos principais (E1–E6),
+> os três de verificação externa (E7–E9, do documento MutaCore) e o **E10**
+> (paridade de orçamento, da auditoria MUTARIC ev) rodam, são determinísticos e
+> têm **30 testes** — mas os números do E1–E4 vêm de um mundo
 > **roteirizado** (`mundo.py` escreve as procedências à mão) e de um leitor que
 > **relê o que foi gravado literalmente**. Leia `docs/02_analise_achados.md` antes de
 > citar qualquer número; ele lista o que os resultados **não** sustentam.
@@ -35,17 +36,22 @@ tentam recuperar **família afetiva, procedência e uma carga explícita de 5,36
    próximo passo e checklist para adicionar um experimento.
 8. `docs/08_historico_completo.md` — **relatório completo**: todos os estudos
    feitos e todas as mudanças de direção.
+9. `docs/09_analise_mutaric_ev.md` — auditoria externa **MUTARIC ev**: 5 correções
+   adotadas, o **E10** (orçamento igual) e a coleta **real** desta máquina.
 
 ## Rodar
 
 ```bash
 pip install -r requirements.txt
-python run_all.py --so-testes    # 27 testes de sanidade (segundos)
-python run_all.py                # testes + E1-E9 + figuras (alguns minutos)
+python run_all.py --so-testes    # 30 testes de sanidade (segundos)
+python run_all.py                # testes + E1-E10 + figuras (alguns minutos)
+python -m ricemotions.experimentos --telemetria   # coleta REAL da máquina (opcional,
+                                                  # requer psutil; não regressada)
 ```
 
-Saídas: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore}.png`
-e `resultados/resultados.json`. No Windows `python` (não `python3`).
+Saídas: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore,e10_orcamento}.png`
+e `resultados/resultados.json`; a coleta opcional grava `resultados/maquina.json` e
+`resultados/telemetria_real.json` (não determinísticos). No Windows `python` (não `python3`).
 
 ## Estrutura
 
@@ -58,11 +64,12 @@ ricemotions/                pacote importável
   residuo.py                E5: geração, roteamento (banda/simetria), Landauer, τ
   agente.py                 E6: transição + mão dupla (S*, w, τ realimentados)
   homeostase.py             MutaCore: resíduo endógeno, S*/τ por telemetria, política
-  experimentos.py           E1-E9, figuras, único lugar com I/O
+  experimentos.py           E1-E10, figuras, único lugar com I/O
 tests/test_smoke.py         sanidade + regressão dos números publicados
-docs/                       9 documentos (índice, arquitetura, análise, ponte, plano, resíduo/agência, MutaCore, continuidade, histórico)
+docs/                       10 documentos (índice, arquitetura, análise, ponte, plano, resíduo/agência, MutaCore, continuidade, histórico, auditoria MUTARIC ev)
 figs/                       figuras geradas
-resultados/                 resultados.json (regenerável)
+resultados/                 resultados.json (regenerável) + maquina.json e
+                            telemetria_real.json (coleta real, não regressada)
 ```
 
 ## Resultados em uma linha
@@ -99,7 +106,7 @@ sinal é menor que o ruído (em vez de virar bit sorteado):
 Também fechado: `codebook_up_to_isomorphism()` no E3 — a carga sob permutação vai de
 **0,208 (artefato) para 1,000**.
 
-**2. O resíduo do ambiente tem destino (E5).** Mesma energia, três roteamentos:
+**2. O resíduo do ambiente tem destino (E5).** O mesmo estado residual, três codificações:
 
 | | classe (leitor cru) | classe (canônico) | resíduo recuperado | linhas gastas |
 |---|---|---|---|---|
@@ -109,8 +116,9 @@ Também fechado: `codebook_up_to_isomorphism()` no E3 — a carga sob permutaç�
 
 A simetria só se lê pelo leitor canônico (cru, sem desfazer a permutação, cai para
 0,303) — e por esse leitor ela dá **exatamente o mesmo número da banda**. Ou seja:
-canonizar custa ~0,10 de acurácia (0,933 → 0,837) e ganha `log₂720 = 9,49` bits de
-resíduo sem tocar no orçamento de pixels.
+canonizar custa ~0,10 de acurácia (0,933 → 0,837) e ganha o **teto combinatório**
+`log₂720 = 9,49` bits — a *ordenação* dos 6 canais, não as amplitudes (auditoria
+MUTARIC ev, correção 2) — sem tocar no orçamento de pixels.
 
 **3. Agência de mão dupla (E6).** O estado lido altera as **próprias regras**:
 
@@ -146,6 +154,32 @@ O `Φ` que o documento injeta tem magnitude **0,021** (10,4% da amplitude do sin
 roteiro) — contra `ΔT = +0,274` do nosso E6. E o código que ele manda colar em
 `mundo.py` gera `R_L ≡ 0` por construção (`docs/06` §8.1).
 
+## Auditoria externa MUTARIC ev (04/10/2026 — `docs/09`)
+
+Segunda verificação externa, mesma regra: **nada aceito sem reprodução numérica.**
+As 5 correções do documento foram adotadas (2 redacionais — "mesma energia" →
+"três codificações do mesmo estado residual", `log₂720` como teto combinatório;
+2 viraram plano: **P1.9** protocolo hierárquico contra pseudorreplicação e
+**P2.6** agente sem evento externo sintético). O E9 agora **declara** o campo não
+determinístico (`campos_nao_deterministicos: ["segundos"]`).
+
+O **E10** responde à pergunta central do documento — *com o MESMO orçamento, o
+resíduo supera uma memória convencional?* — com quatro agentes idênticos em tudo
+exceto o sinal (6 `float64`, mesma EMA, mesma política, mesmos episódios,
+sementes e ruído):
+
+| condição | resultado |
+|---|---|
+| (a) reconstrói **menos** conteúdo que a memória convencional | **sim** — RMSE 0,1018 (AR) vs 0,0827 (AM) |
+| (b) MI excedente com o futuro > 0 | **sim** — **+0,0165 bits** (controle de ruído ≈ 0) |
+| (c) `J(AR) > J(AM)` nos dois regimes de distúrbio | **sim** — pareado, t ≈ 12 e t ≈ 6 |
+
+**Ressalva publicada:** `AR ≈ A0` (nulo) — o resíduo supera a memória
+*convencional*, não a *ausência* de memória. E a coleta **real** desta máquina
+(CPU 18,5–60,0%, RAM ~81%) está em `resultados/maquina.json` e
+`resultados/telemetria_real.json`, com a carga real alimentando o E10 no lugar do
+resíduo sintético — fora da regressão por ser não determinística.
+
 ## Quatro limites que não se deve esquecer
 
 1. **Roteiro, não emergência** — as procedências são cenários escritos à mão
@@ -168,9 +202,11 @@ roteiro) — contra `ΔT = +0,274` do nosso E6. E o código que ele manda colar 
 `docs/04_plano_desenvolvimento.md`: **P0 fechado** (testes, codebook de isomorfismo,
 leitor soft, curva × σ e CI verde). A fila agora é **P1** — ICs e teste de hipótese
 para E1–E4, baseline séria (logística/MLP), transformações perceptivas reais, faixa
-de neutro e **P1.7** (carga como canal: espalhamento + decodificador, a única ideia
-do MutaCore que ficou como trabalho futuro). Depois **P2.1**, trocar
-`mundo.episode()` por `teoa/core.py` de verdade. Como retomar: `docs/07`.
+de neutro, **P1.7** (carga como canal: espalhamento + decodificador, a única ideia
+do MutaCore que ficou como trabalho futuro) e **P1.9** (protocolo hierárquico —
+correção da auditoria). Depois **P2.1**, trocar `mundo.episode()` por
+`teoa/core.py` de verdade, e **P2.6** (agente sem evento externo sintético).
+Como retomar: `docs/07`.
 
 ---
 
@@ -186,10 +222,11 @@ A 6-channel × 32-step episode becomes **valence + activation**, is rendered as 
 by a relational reader that decodes **affective family, provenance and an explicit
 5.36-bit payload**.
 
-**Status: exploratory prototype.** Six experiments (E1–E6) plus three external
-verification runs (E7–E9, from the MutaCore document) run deterministically and
-are covered by **27 tests**, but the world is **hand-scripted** and the reader
-**re-reads what the writer stored literally**. Read `docs/02_analise_achados.md`
+**Status: exploratory prototype.** Six experiments (E1–E6), three external
+verification runs (E7–E9, from the MutaCore document) and **E10** (equal budget,
+from the MUTARIC ev audit) run deterministically and are covered by **30 tests**,
+but the world is **hand-scripted** and the reader **re-reads what the writer
+stored literally**. Read `docs/02_analise_achados.md`
 before quoting any number: it lists what the results do **not** support.
 
 | | clean | noise σ=0.10 | brightness | row permutation |
@@ -230,6 +267,20 @@ live 1000/1000 cycles (death is structurally impossible — T fixed point 0.840 
 and in a lethal regime the dynamic `S*` **costs** 20.6 cycles while early recharging
 **gains** 36; the residue-keyed cipher has **16.61 bits** of key space and falls to
 brute force in ≈0.3 s.
+
+**New in this cycle (`docs/09`):** the second external audit ("MUTARIC ev") was
+verified claim by claim — the only nondeterministic diff really is `E9/segundos`
+(now *declared* via `campos_nao_deterministicos`), and the proposition
+`F(X,R) ≠ F(X,R')` is protected by the existing tests (0.0 open vs 0.00615
+closed). **E10** compares four equal-budget agents (no memory / noise /
+conventional content memory / residue; 6 float64, same EMA, policy, episodes,
+seeds, noise): **3 of 3 conditions hold** — the residue reconstructs less content
+(RMSE 0.1018 vs 0.0827), its excess MI with the future is **+0.0165 bits** (noise
+control ≈ 0), and paired J(AR) > J(AM) in both disturbance regimes (t ≈ 12 and
+t ≈ 6) — **but AR ≈ A0**: the residue beats conventional memory, not the absence
+of memory (a partial null result, published as prominently as the positive ones).
+Real telemetry from this machine drives the E10 residue channel in place of the
+synthetic input, in non-regressed files.
 
 Full English documentation: [`README.en.md`](README.en.md). Architecture, findings,
 TEOA↔PIXEL mapping and roadmap in `docs/` (Portuguese).

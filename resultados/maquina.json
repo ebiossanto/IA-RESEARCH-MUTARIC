@@ -1,0 +1,14 @@
+{
+ "sistema": "Windows 10",
+ "edicao": "10.0.19045",
+ "arquitetura": "AMD64",
+ "processador": "Intel64 Family 6 Model 58 Stepping 9, GenuineIntel",
+ "nucleos_logicos": 4,
+ "memoria_total_gb": 7.69,
+ "disco_total_gb": 111.22,
+ "python": "3.12.10",
+ "numpy": "2.5.3",
+ "matplotlib": "3.11.2",
+ "psutil": "7.2.2",
+ "papel": "metadados da máquina que produz os números publicados; não participa de nenhum teste nem de run_all.py"
+}

@@ -1,6 +1,6 @@
 """Ponto de entrada único do ricemotions.
 
-    python run_all.py                # testes + experimentos (E1-E9) + figuras
+    python run_all.py                # testes + experimentos (E1-E10) + figuras
     python run_all.py --so-testes    # só a sanidade (segundos)
     python run_all.py --so-experimentos
 

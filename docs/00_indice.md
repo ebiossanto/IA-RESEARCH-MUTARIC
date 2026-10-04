@@ -11,23 +11,26 @@ Ponto de entrada do repositório. Todo o resto está em `README.md` (PT) e
 | `04_plano_desenvolvimento.md` | O plano P0–P3 com critério de aceite e status | Para saber o que fazer agora |
 | `05_residuo_e_agencia.md` | Resíduo de Landauer, τ como humor, agência de mão dupla (E5, E6) | Para os mecanismos novos e suas provas |
 | `06_analise_mutacore.md` | Análise do documento MutaCore/RIC: 18 afirmações (8 confirmadas · 6 refutadas · 4 parciais), veredito e prova (E7–E9) | Para o ciclo de verificação externa |
-| `07_continuidade.md` | **Retomada**: estado, regras decididas, próximo passo, checklist de E10 | O primeiro documento ao voltar ao projeto |
+| `07_continuidade.md` | **Retomada**: estado, regras decididas, próximo passo, checklist do próximo experimento | O primeiro documento ao voltar ao projeto |
 | `08_historico_completo.md` | **História**: todos os estudos feitos e todas as mudanças de direção | Para o relatório completo do trabalho |
+| `09_analise_mutaric_ev.md` | Auditoria externa MUTARIC ev: 5 correções, proposição, E10 (orçamento igual) e coleta real desta máquina | Para o ciclo 6 de verificação externa |
 
 ## Ordem de leitura
 
 - **5 minutos:** `README.md` (resultado em uma linha + limites) e este índice.
 - **30 minutos:** + `04` (plano e status) e `07` (como retomar).
 - **2 horas:** + `02` (achados e limitações), `06` (provas do ciclo MutaCore),
-  `05` (mecanismos), `01` (contrato), `03` (ponte), `08` (histórico).
+  `09` (provas do ciclo MUTARIC ev), `05` (mecanismos), `01` (contrato),
+  `03` (ponte), `08` (histórico).
 
 ## Onde vivem as coisas
 
 ```
 ricemotions/     código (mundo · glifo · residuo · agente · homeostase · experimentos)
-tests/           27 testes de sanidade + regressão dos números publicados
-resultados/      resultados.json — fonte única dos números citados (regenerável)
-figs/            8 figuras geradas (regeneráveis; o diff deve ser vazio)
+tests/           30 testes de sanidade + regressão dos números publicados
+resultados/      resultados.json — fonte única dos números citados (regenerável);
+                 + maquina.json e telemetria_real.json (coleta real, NÃO regressada)
+figs/            9 figuras geradas (regeneráveis; o diff deve ser vazio)
 .github/         CI: matriz Windows + Linux rodando os testes
 ```
 

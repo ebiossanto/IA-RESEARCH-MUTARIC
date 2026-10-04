@@ -15,7 +15,8 @@ Todos os números aqui vêm de `resultados/resultados.json` (chaves `curva_sigma
 
 A análise do documento externo **MutaCore/RIC** — que propõe o mesmo filtro de
 Landauer, uma homeostase de hardware e um benchmark de sobrevivência — está em
-`docs/06_analise_mutacore.md` (E7–E9, testes 27/27).
+`docs/06_analise_mutacore.md` (E7–E9). A auditoria externa seguinte, **MUTARIC ev**,
+está em `docs/09_analise_mutaric_ev.md` (E10, testes 30/30).
 
 ---
 
@@ -162,11 +163,13 @@ queda de **60%**. Com τ alto o sistema não reage mais *para melhor*; ele apena
 
 ## 5. Isomorfismo de resíduo: as 720 permutações (E5)
 
-### 5.1 Os três destinos da mesma energia
+### 5.1 Os três destinos do mesmo estado residual
 
-`experimentos.e5_residuo()` dá a **mesma** energia de resíduo estruturado
-(AR(1) ρ=0,9 + componente comum; energia média Σr² = 17,3 a 300 glifos) a três
-destinos:
+`experimentos.e5_residuo()` parte do **mesmo estado residual** (AR(1) ρ=0,9 +
+componente comum; energia média de origem Σr² = 17,3 a 300 glifos) e o envia a
+três destinos. São **três codificações da mesma realização** — a energia medida
+na *saída* de cada rota não é a mesma grandeza (auditoria MUTARIC ev, correção 3
+— `docs/09` §3):
 
 | | destino | linhas custadas |
 |---|---|---|
@@ -218,15 +221,17 @@ identidade do canal pela ordenação dos canais.
 **Custo honesto:** a canonicização perde a identidade de canal (`E,T,C,B,G,N` deixam
 de estar em posição fixa). Por isso ler o corpo canônico vale 0,837 onde o leitor cru
 vale 0,933 — **a simetria não é de graça: custa ~0,10 de acurácia (0,933 → 0,837, o
-mesmo custo que a banda paga se também for lida pelo leitor canônico) e ganha 9,49
-bits de resíduo sem tocar no orçamento de pixels.**
+mesmo custo que a banda paga se também for lida pelo leitor canônico) e ganha o teto
+combinatório de 9,49 bits — a ordenação dos 6 canais, não as amplitudes (correção 2
+da auditoria: `log2(720)` é teto, não capacidade útil — `docs/09` §3) — sem tocar no
+orçamento de pixels.**
 
 ### 5.4 Orçamento de informação
 
 | canal | capacidade | custo em linhas |
 |---|---|---|
 | resíduo como **banda** | `6 × 32 × 8` bits (flutuante quantizado) | 6 |
-| resíduo como **simetria** | `log₂(720) = 9,49` bits = a **ordenação** parcial dos 6 canais | 0 |
+| resíduo como **simetria** | `log₂(720) = 9,49` bits de **teto combinatório** = a **ordenação** parcial dos 6 canais (empates e distribuição limitam o que se recupera) | 0 |
 | resíduo como **ruído** | 0 bits recuperáveis | 0 (mas destrutivo) |
 
 A simetria carrega a *ordem*, não as *amplitudes*: `argsort` é irreversível para os
@@ -313,6 +318,16 @@ e volta** — é um estado que reage, não uma identidade trocada.
    **só a classe 0**. Os primeiros números (0,983 para B) eram recall de uma classe
    só. Corrigido com amostragem estratificada (50 × 6) e agora bate com o E1
    (0,933 ≈ 0,919). Quem for reproduzir commits anteriores deve saber.
+7. **Pseudorreplicação (auditoria MUTARIC ev, correção 4):** os 1800 episódios do
+   teste vêm de UMA semente e os 300 glifos do E5 de UMA semente — não são 1800
+   observações independentes, e nenhuma IC daqui existe. O protocolo hierárquico
+   `mundo → semente → episódio` está planejado como **P1.9** (`docs/04`); até lá,
+   trate os números deste documento como uma realização descritiva.
+8. **O E6 usa evento externo sintético (correção 5):** o `residuo_evento` que
+   perturba o agente vem de `residuo.gerar()` com seed fixa, não de um mundo real.
+   A substituição está planejada como **P2.6** (`docs/04`) e o E10 (`docs/09`)
+   já opera com o resíduo derivado dos próprios episódios — e, na variante
+   `telemetria_real.json`, da carga desta máquina.
 
 ---
 
@@ -386,8 +401,8 @@ entre as causas da próxima transição — e há um número que prova a diferen
 | P0.2 `codebook_up_to_isomorphism` no E3 | **feito** — `carga_isomorfismo`, 0,208 → 1,000 | §5, `resultados.json` |
 | P0.3 decodificação soft | **feito** — `body_cont` + correção + pesos | §2 |
 | P0.4 curva acurácia × σ | **feito** — 7 valores de σ | §2.2, `figs/curva_sigma.png` |
-| P0.1 `run_all.py` limpo | **feito** — hoje 27/27 testes | `tests/test_smoke.py` |
-| P0.5 CI (GitHub Actions) | **feito** — `.github/workflows/ci.yml`, 27/27 em Windows e Linux | `docs/04`, badge no README |
+| P0.1 `run_all.py` limpo | **feito** — hoje 30/30 testes | `tests/test_smoke.py` |
+| P0.5 CI (GitHub Actions) | **feito** — `.github/workflows/ci.yml`, 30/30 em Windows e Linux | `docs/04`, badge no README |
 | P1.7 carga espalhada + decodificador | **origem**: ideia recusada do MutaCore (não verificável lá) | `docs/06` §8.5/§9, `docs/04` P1.7 |
 | P2.2 "Agente" | **parcial** — existe `agente.py` com política e transição, mas ainda sem custo/recompensa nem `teoa.core` | §6 |
 | L2 (sem agente) | **parcialmente fechada** | `docs/03` |

@@ -1,13 +1,15 @@
 """
 Resíduo do ambiente: gerar, ROTEAR e ler.
 
-A mesma energia de resíduo pode ter três destinos (experimento E5):
+  O mesmo estado residual dá origem a três codificações (experimento E5) — a mesma
+  realização de resíduo, três destinos diferentes:
 
   A. ESPALHADO  vira ruído de pixel e destrói a leitura (é o modelo das E1-E4).
   B. BANDA      linhas-de-patch 16-21 dedicadas: leitura intacta, resíduo exato,
                 custa 6 linhas do orçamento do glifo.
   C. SIMETRIA   vira uma permutação do corpo (6! = 720): leitura intacta, custa ZERO
-                linhas e carrega a ORDEM dos 6 canais — log2(720) = 9,49 bits.
+                linhas e carrega a ORDEM dos 6 canais — teto combinatório
+                log2(720) = 9,49 bits (a ordenação, não as amplitudes).
 
 Dois mecanismos de realimentação (docs/05):
 
@@ -60,7 +62,8 @@ def memoria_ema(r, prev, alpha=0.15):
 
 # ---------------- os três roteamentos ----------------
 def para_pixels(r, seed=1234):
-    """Condição A: a MESMA energia total espalhada como ruído branco na imagem.
+    """Condição A: a energia do MESMO estado residual espalhada como ruído branco na
+    imagem.
 
     A energia (soma dos quadrados do resíduo) é conservada e distribuída por todas as
     amostras de pixels, o que torna a comparação com as condições B e C justa.

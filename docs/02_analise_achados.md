@@ -9,7 +9,9 @@ Sementes fixas: treino 1, validação 2, teste 3; τ escolhido **na validação*
 > **Este documento cobre E1–E4.** Os experimentos novos (curva acurácia × σ, E5
 > resíduo, E6 agência) e a resposta ao argumento *"eu não sinto, eu computo"*
 > estão em `docs/05_residuo_e_agencia.md`; a verificação externa do documento
-> MutaCore (E7–E9) está em `docs/06_analise_mutacore.md`. Os achados A2, A3 e A5
+> MutaCore (E7–E9) está em `docs/06_analise_mutacore.md`; a auditoria externa
+> MUTARIC ev e o **E10** (paridade de orçamento) estão em
+> `docs/09_analise_mutaric_ev.md`. Os achados A2, A3 e A5
 > ganharam notas de status apontando para lá.
 
 ---

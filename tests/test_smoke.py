@@ -366,6 +366,66 @@ def test_afirmacao_do_918_nao_vale_para_ruido():
     assert ruido < limpo - 0.30                            # e muito abaixo do "91,8%"
 
 
+# ---------------- MUTARIC ev: correções + E10 (docs/09) ----------------
+def test_e9_campo_nao_determinista_declarado():
+    """Correção 1 (MUTARIC ev): 'segundos' é declarado NÃO determinístico e nenhum
+    teste regressa o seu valor — a regressão do E9 cobre chave, bits e roundtrip."""
+    from ricemotions import experimentos as E
+    r = E.e9_chave_residuo()
+    assert r["campos_nao_deterministicos"] == ["segundos"]
+    assert isinstance(r["segundos"], float) and r["segundos"] > 0
+    assert r["bits_de_chave"] < 17.0                       # isto sim é regressado
+
+
+def test_e10_orcamento():
+    """E10 (MUTARIC ev §6): orçamento igual (6 floats, mesma EMA, mesma política) —
+    (a) AR reconstrói MENOS conteúdo que AM; (b) MI excedente de AR > 0; (c)
+    J(AR) > J(AM) nos dois regimes. E a ressalva publicada: AR ≈ A0."""
+    from ricemotions import experimentos as E
+    r = E.e10_orcamento()
+    d = r["design"]
+    assert r["deterministico"] is True
+    assert d["sementes"] == 25 and d["T_passos"] == 160 and d["alpha"] == 0.15
+    assert d["l2"] == 0.0 and d["l3"] == 0.0               # sem ação; custo idêntico por construção
+    # (a) conteúdo apagado: a memória convencional reconstrói o conteúdo melhor
+    a = r["cond_a_rmse_reconstrucao"]
+    assert a["AM"] < a["AR"] and a["AM"] < a["A0"]
+    # (b) predição do futuro: excedente acima do piso do viés; controle ~ 0
+    b = r["cond_b_mi_excesso"]
+    assert b["AR"] > 0 and b["AM"] > b["AR"]
+    assert 0.0 <= b["AN"] < b["AR"]
+    # (c) J: AR > AM nos dois regimes de distúrbio — números publicados
+    j = r["J"]
+    assert j["conteudo"]["AR"] > j["conteudo"]["AM"]
+    assert j["mudanca"]["AR"] > j["mudanca"]["AM"]
+    assert abs(j["conteudo"]["AR"] + 0.141122) < 1e-4
+    assert abs(j["conteudo"]["AM"] + 0.149413) < 1e-4
+    assert abs(j["mudanca"]["AR"] - 0.402060) < 1e-4
+    assert abs(a["AM"] - 0.082692) < 1e-4
+    assert abs(b["AR"] - 0.016478) < 5e-3
+    # a ressalva honesta: contra A0 (nenhuma memória) a diferença é nula
+    assert abs(r["comparacoes_pareadas"]["conteudo"]["AR-A0"]["media"]) < 1e-3
+    assert r["condicoes"]["c_ar_maior_nos_dois_regimes"] is True
+    assert "de 3 condições" in r["veredito"]
+
+
+def test_maquina_e_telemetria_fora_da_regressao():
+    """Coleta real desta máquina (MUTARIC ev, correções 1 e 5): em arquivos próprios,
+    o de telemetria declara deterministico=False e nenhum teste regressa os valores."""
+    import json
+    raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    m = json.load(open(os.path.join(raiz, "resultados", "maquina.json"), encoding="utf-8"))
+    for k in ("sistema", "arquitetura", "python", "numpy", "nucleos_logicos",
+              "memoria_total_gb", "papel"):
+        assert k in m and m[k], k
+    t = json.load(open(os.path.join(raiz, "resultados", "telemetria_real.json"), encoding="utf-8"))
+    assert t["deterministico"] is False
+    assert t["amostras"] == len(t["cpu_pct"]) >= 5
+    assert all(0.0 <= c <= 100.0 for c in t["cpu_pct"])
+    assert t["J"]["conteudo"]["AR"] is not None
+    assert t["condicoes"]["c_ar_maior_nos_dois_regimes"] is True
+
+
 TESTES = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
 
 

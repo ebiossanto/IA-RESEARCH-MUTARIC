@@ -19,9 +19,10 @@ episode (6 channels × 32 steps)      TEOA side: state, distance to target s*
    → family · provenance · payload    6 classes, 3 provenances, 5.36 bits per glyph
 ```
 
-**Status: exploratory prototype.** The six experiments (E1–E6) plus three external
-verification runs (E7–E9, from the attached MutaCore document) run deterministically
-and are covered by **27 smoke tests**, but the affective world is **hand-scripted**
+**Status: exploratory prototype.** The six experiments (E1–E6), three external
+verification runs (E7–E9, from the attached MutaCore document) and **E10** (equal
+budget, from the MUTARIC ev audit) run deterministically
+and are covered by **30 smoke tests**, but the affective world is **hand-scripted**
 (`mundo.py` writes the provenances as scenarios) and the reader **re-reads what the
 writer stored literally**. Read `docs/02_analise_achados.md` before quoting any
 number — it lists what the results do **not** support.
@@ -32,29 +33,34 @@ number — it lists what the results do **not** support.
 README.md / README.en.md     this file / Portuguese version
 requirements.txt .gitignore  numpy, scipy, matplotlib
 run_all.py                   entry point: tests + experiments
-.github/workflows/ci.yml     CI: 27 tests on Windows + Linux
+.github/workflows/ci.yml     CI: 30 tests on Windows + Linux
 ricemotions/
   mundo.py                   TEOA side: episodes, valence, labels   (no I/O)
   glifo.py                   PIXEL/RIC side: write, read, graphs     (no I/O)
   residuo.py                 E5: residue generation/routing, Landauer, τ
   agente.py                  E6: transition + two-way loop (S*, w, τ fed back)
   homeostase.py              MutaCore: endogenous residue, telemetry → S*/τ, policy
-  experimentos.py            E1–E9, figures, the only module with I/O
+  experimentos.py            E1–E10, figures, the only module with I/O
 tests/test_smoke.py          contracts + regression of published numbers
-docs/                        9 documents: index · architecture · findings · bridge · roadmap · residue/agency · MutaCore · continuity · history
+docs/                        10 documents: index · architecture · findings · bridge · roadmap · residue/agency · MutaCore · continuity · history · MUTARIC ev audit
 figs/  resultados/           generated figures and resultados/resultados.json
+                             (+ maquina.json and telemetria_real.json: real machine
+                             collection, non-deterministic, never regressed)
 ```
 
 ## Running
 
 ```bash
 pip install -r requirements.txt
-python run_all.py --so-testes    # 27 sanity tests (seconds)
-python run_all.py                # tests + E1–E9 + figures (a few minutes)
+python run_all.py --so-testes    # 30 sanity tests (seconds)
+python run_all.py                # tests + E1–E10 + figures (a few minutes)
+python -m ricemotions.experimentos --telemetria   # real machine collection (optional,
+                                                  # needs psutil; not regressed)
 ```
 
-Outputs: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore}.png`
-and `resultados/resultados.json`.
+Outputs: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore,e10_orcamento}.png`
+and `resultados/resultados.json`; the optional collection writes
+`resultados/maquina.json` and `resultados/telemetria_real.json` (non-deterministic).
 
 ## Headline results (balanced accuracy, 1800-glyph test set)
 
@@ -81,13 +87,15 @@ of collisions between isomorphic words (see findings A3).
    *ignored* instead of becoming random bits. Gain over the hard reader: **+0.395 at
    σ=0.10**, **+0.451 at σ=0.15**; at σ=0.40 the hard reader is at chance (0.167)
    while the robust one still scores 0.308.
-2. **Residue has three destinations (E5, same energy):** spread as pixel noise →
+2. **Residue has three destinations (E5, same residual state):** spread as pixel noise →
    class 0.270 and **0.000 residue recovered**; a dedicated band → 0.933 raw /
    0.977 recovered at a cost of **6 rows**; the **720 symmetries of the canonical
    body** → 0.837 under the canonical reader (the *same* score the band gets when
    read the same way) / **1.000** recovered at a cost of **0 rows**. Read raw, the
    symmetry scores 0.303 — the permutation must be undone. Canonicalising costs
-   ~0.10 accuracy (0.933 → 0.837) and buys `log₂720 = 9.49` bits of residue for free.
+   ~0.10 accuracy (0.933 → 0.837) and buys the *combinatorial ceiling*
+   `log₂720 = 9.49` bits — the **order** of the channels, not their amplitudes —
+   for free.
 3. **Two-way agency (E6):** the read state alters the *transition rules*. Same state,
    different residue history → the next transition differs by **0.00615** when closed
    vs exactly **0.00000** when open. A Landauer-style filter raises tension
@@ -117,6 +125,32 @@ Four mechanisms were adopted (seven code entries — `docs/06` §2); of the 18 c
 Also: the injected `Φ` has magnitude **0.021** (10.4 % of the script's signal
 amplitude) against our own `ΔT = +0.274` in E6, and the snippet the document tells
 us to paste into `mundo.py` produces `R_L ≡ 0` by construction (`docs/06` §8.1).
+
+## Second external audit — "MUTARIC ev" (`docs/09`, in Portuguese)
+
+Same rule: **nothing accepted without numerical reproduction.** All five
+corrections were adopted — two wordings ("same energy" → "three codifications of
+the same residual state"; `log₂720` stated as a combinatorial ceiling, not usable
+capacity), one marker (`E9` now declares `campos_nao_deterministicos:
+["segundos"]`), and two became roadmap items (**P1.9** hierarchical protocol
+against pseudoreplication, **P2.6** agent without synthetic external events).
+
+**E10** answers the document's central question — *with an EQUAL budget, does the
+residue beat conventional memory?* Four agents identical in everything but their
+signal (6 float64, same EMA, same policy, episodes, seeds and noise):
+
+| condition | result |
+|---|---|
+| (a) reconstructs **less** content than conventional memory | **yes** — RMSE 0.1018 (residue) vs 0.0827 (content) |
+| (b) excess MI with the future > 0 | **yes** — **+0.0165 bits** (noise control ≈ 0) |
+| (c) J(residue) > J(content) in both disturbance regimes | **yes** — paired, t ≈ 12 and t ≈ 6 |
+
+**Published caveat:** residue ≈ no-memory (null) — the residue beats
+*conventional* memory, not the *absence* of memory. Real telemetry from this
+machine (CPU 18.5–60.0 %, RAM ≈ 81 %) is collected into
+`resultados/maquina.json` / `resultados/telemetria_real.json` and drives the E10
+residue channel in place of the synthetic input, outside the regression because
+it is non-deterministic.
 
 ## Key findings (details in `docs/02_analise_achados.md`)
 
@@ -182,11 +216,13 @@ not a programming problem. Full argument in `docs/05` §8.
 
 See `docs/04_plano_desenvolvimento.md` (P0–P3, each with acceptance criteria).
 **P0.1–P0.5 are done** (isomorphism-aware payload, robust soft decoding,
-accuracy-vs-σ curve, clean `run_all.py`, CI on Windows + Linux); **P1** remains: real
+accuracy-vs-σ curve, clean `run_all.py`, CI on Windows + Linux), and the
+MUTARIC ev audit is closed (`docs/09`); **P1** remains: real
 baselines, bootstrap hypothesis tests, perceptual transformations, a neutral band,
-plus **P1.7** (payload as a channel: spreading + decoder — the only MutaCore idea
-left as future work). Then **P2**: wire the actual TEOA core and a two-agent
-communication loop. How to resume: `docs/07_continuidade.md`.
+**P1.7** (payload as a channel: spreading + decoder — the only MutaCore idea
+left as future work) and **P1.9** (hierarchical protocol). Then **P2**: wire the
+actual TEOA core, a two-agent communication loop and **P2.6** (agent without
+synthetic external events). How to resume: `docs/07_continuidade.md`.
 
 ## Relation to the TEOA project
 

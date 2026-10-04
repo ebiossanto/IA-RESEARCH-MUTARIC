@@ -185,7 +185,7 @@ e afirma que só quem conhece o histórico térmico lê a mensagem.
 |---|---|
 | espaço de chave real (`R_L ∈ [0,1)`, passo 10⁻⁵) | 100001 valores |
 | entropia | **log₂(100001) = 16,61 bits** |
-| força bruta sobre "MutaCore v2" | chave `0,03452` recuperada em **≈0,3 s** após **3453** candidatos |
+| força bruta sobre "MutaCore v2" | chave `0,03452` recuperada em **≈0,3 s** nesta máquina após **3453** candidatos (`segundos` é medição não determinística — `docs/09` §3) |
 | roundtrip com a chave exata | OK |
 
 Três problemas, em ordem de gravidade:
@@ -400,5 +400,5 @@ accepted.**
   unused `landauer_stress` parameter with no Walsh decoder).
 
 Artifacts: `resultados/resultados.json` (`E7_residuo_mutacore`,
-`E8_sobrevivencia`, `E9_chave_residuo`), `figs/mutacore.png`, tests 27/27 via
+`E8_sobrevivencia`, `E9_chave_residuo`), `figs/mutacore.png`, tests 30/30 via
 `python run_all.py`.

@@ -9,7 +9,7 @@ para não virar lista infinita. Esforço estimado para uma pessoa, com o código
 
 | # | Tarefa | Pronto quando | status (04/10/2026) |
 |---|---|---|---|
-| P0.1 | `python run_all.py` roda limpo em Windows e Linux | testes + experimentos verdes em ambas as plataformas | **feito** — 27/27 testes |
+| P0.1 | `python run_all.py` roda limpo em Windows e Linux | testes + experimentos verdes em ambas as plataformas | **feito** — 30/30 testes |
 | P0.2 | `codebook_up_to_isomorphism()` entra no E3 | `carga_permutacao` mostra `canonicalizado ≈ 1,0` e a curva `bits × σ` é regenerada; JSON e figura atualizados | **feito** — `carga_isomorfismo`: 0,208 → **1,000** limpo e sob permutação (`docs/05` §5) |
 | P0.3 | Decodificação **soft** do grafo (ponderar bit por `\|cos\| − τ`) | `6c_relacional` em σ=0,10 **> 0,6** (hoje 0,334 = chance), sem piorar o caso limpo | **feito** — `body_cont` + de-atenuação + pesos: σ=0,10 → **0,733** (limpo 0,919 → 0,892, ver `docs/05` §2.2) |
 | P0.4 | Curva acurácia × σ (hoje há pontos isolados) | gráfico com 6+ valores de σ para cada método | **feito** — 7 valores × 4 leitores, `figs/curva_sigma.png` |
@@ -64,6 +64,7 @@ figura `figs/mutacore.png`; testes 21 → **27**.
 | P1.6 | Documentar **graus de liberdade do pesquisador** (τ, `d_min`, janelas 8/8, `d_ref`, `α`, `β`, `noise`, distrator 30%, **γ do resíduo endógeno**, **`carga_hw`**) | lista numerada em `docs/` — mesma disciplina do TEOA `docs/05` |
 | P1.7 | Carga como canal: espalhamento por portadora + **decodificador** (ideia do MutaCore §F, recusada lá por não ser verificável — `docs/06` §8.5/§9) | `decode_payload` lê a camada espalhada e `carga_capacidade` não piora |
 | P1.8 | τ com **zona morta/histerese** (achado A2b de `docs/02` — pendência órfã, nunca entrou no plano) | o leitor duro sobe em σ=0,10 sem leitor robusto e não perde o caso limpo |
+| P1.9 | **Protocolo hierárquico** `mundo → semente → episódio` para as ICs (auditoria MUTARIC ev, correção 4 — 1800 episódios de uma semente não são 1800 independentes; `docs/09` §3) | ICs calculadas com o MUNDO como unidade (≥ 10 sementes × ≥ 3 seeds de mundo); se a IC incluir 0, o resultado é declarado nulo |
 
 ## P2 — Ligar o TEOA de verdade (2–4 semanas)
 
@@ -77,6 +78,7 @@ pacote de "leitor de glifos" em "emoção comunicada".
 | P2.3 | **Loop de comunicação**: agente A escreve glifo, agente B lê e isso altera a ação de B | experimento com 2 agentes e métrica de ganho/mutual information | **pendente** (o feedback de hoje é do leitor sobre as próprias regras, não sobre outro agente) |
 | P2.4 | Memória: sequência de glifos no tempo (ciclos, histerese do TEOA) | série temporal de glifos e detecção de regime |
 | P2.5 | Mix de emoções (dois episódios sobrepostos) e glifos "ambíguos" por projeto | E1–E4 rodando em classes multi-rótulo |
+| P2.6 | **Agente sem evento externo sintético** (auditoria MUTARIC ev, correção 5 — hoje o E6 recebe `residuo_evento` de `residuo.gerar()` com seed; `docs/09` §3) | o loop do E6 roda só com resíduo endógeno (`residuo_transicao`) e/ou telemetria real, mantendo os números de `E6_agencia` documentados como antes-da-mudança |
 
 **Critério de parada da P2:** se, com o agente real, `nivel+delta` continuar 1,000 e
 o relacional continuar pior, a conclusão é que a hipótese relacional **não se sustenta**
@@ -107,8 +109,16 @@ o relacional continuar pior, a conclusão é que a hipótese relacional **não s
       desde 04/10/2026, `main` + CI verde) *(04/10/2026)*
 - [x] Documentos de navegação e memória: `docs/00` (índice), `docs/07`
       (continuidade) e `docs/08` (histórico completo) *(04/10/2026)*
+- [x] **Auditoria externa MUTARIC ev analisada com provas** (04/10/2026): as 5
+      correções adotadas (2 viraram o plano **P1.9**/**P2.6**), a proposição
+      `F(X,R) ≠ F(X,R')` verificada nos testes, o **E10** (paridade de orçamento:
+      4 agentes, 3 condições) implementado e a coleta **real** desta máquina em
+      arquivos próprios não-regressados — `docs/09`; hoje 30 testes, 9 figuras.
+- [x] Resultado nulo publicado com a mesma proeminência do resultado positivo.
+      *(parcial → cumprido: E8 (ganho 0%), E9 (chave de 16,6 bits) e agora o E10
+      "AR ≈ A0 — o resíduo supera a memória convencional, não a ausência de
+      memória" publicados no mesmo destaque dos positivos — `docs/09` §5.2)*
 - [ ] Números do E1–E4 com IC e teste de hipótese.
-- [ ] Resultado nulo publicado com a mesma proeminência do resultado positivo.
 - [ ] Um experimento com `teoa.core` de verdade (P2.1).
 - [ ] Link do repo PIXEL em `docs/03` §5.
 - [ ] Toda escolha feita *depois* de ver resultado, listada. *(parcial: a troca da

@@ -6,7 +6,8 @@ E1  Três alegrias (e três tristezas): a procedência se lê nas RELAÇÕES do 
 E2  Família afetiva: canal de NÍVEL (faixa de intensidade) vs canal RELACIONAL (par de linhas).
 E3  Carga explícita: capacidade x robustez (d_min), permutação de vértices, mensagem em vários glifos.
 E4  Pipeline completo (família por polaridade + procedência por relações) vs linhas de base.
-E5  Resíduo do ambiente: mesma energia, três destinos (espalhado | banda | simetria).
+E5  Resíduo do ambiente: o mesmo estado residual em três codificações
+    (espalhado | banda | simetria).
 E6  Agência: Landauer -> T/C -> tau -> pesos -> transição (mão dupla vs roteiro).
     + curva acurácia x sigma do leitor robusto (correção de atenuação por redundância).
 E7  MutaCore: o resíduo de transição (§B) reproduz o JSON publicado? E as previsões
@@ -14,8 +15,13 @@ E7  MutaCore: o resíduo de transição (§B) reproduz o JSON publicado? E as pr
 E8  MutaCore: o benchmark de sobrevivência (§E) — reprodução fiel, ablação 2x2x2,
     varredura de severidade e o limiar exato em que a morte passa a ser possível.
 E9  MutaCore: o espaço de chave da cifra acoplada ao resíduo (§F) e força bruta.
+E10 Orçamento igual: o resíduo supera uma memória convencional de MESMO orçamento?
+    Quatro agentes (A0/AN/AM/AR), três condições (pouco conteúdo passado, informação
+    preditiva do futuro, J) — especificação do documento MUTARIC ev (docs/09).
 
-Análise, vereditos e provas: docs/06_analise_mutacore.md.
+Análise, vereditos e provas: docs/06_analise_mutacore.md e docs/09_analise_mutaric_ev.md.
+Coleta REAL de informação desta máquina (não determinística, fora do run_all):
+    python -m ricemotions.experimentos --telemetria
 """
 import json, os, sys, time
 import numpy as np
@@ -23,7 +29,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from ricemotions.mundo import (CLASSES, CAUSAS, FAMILIAS, make_set, affect, VARS,
-                               S_STAR, NV, T as T_MUNDO)
+                               S_STAR, NV, T as T_MUNDO, episode)
 from ricemotions import glifo as G
 from ricemotions import residuo as R
 from ricemotions import agente as A
@@ -124,12 +130,17 @@ def curva_sigma(Itr, ytr, Ite, yte, tau):
 
 # ================= E5: roteamento do resíduo =================
 def e5_residuo(Itr, ytr, Ite, yte, ste, Ete, parts, bits, tau, n=300):
-    """A MESMA energia de resíduo com três destinos.
+    """O MESMO estado residual (energia média Σr² = 17,3) em três codificações.
+
+    As três rotas partem da MESMA realização de resíduo; o que cada uma faz com ela
+    é que difere (a energia medida na SAÍDA de cada rota não é a mesma grandeza).
 
     ``A espalhado`` vira ruído de pixel (é o modelo das E1-E4) — destrói a leitura.
     ``B banda``     linhas-de-patch 16-21 dedicadas — leitura intacta, custa 6 linhas.
     ``C simetria``  vira uma permutação do corpo canônico — leitura intacta, custa
-                    ZERO linhas e carrega a ordem dos 6 canais (log2 720 = 9,49 bits).
+                    ZERO linhas e carrega a ORDEM dos 6 canais: teto combinatório
+                    log2 720 = 9,49 bits (não é capacidade útil — são os 6 lugares
+                    da ordenação; empates e a distribuição limitam o que se recupera).
 
     Métricas: acurácia da classe (leitor cru e leitor canônico), da carga, e a
     recuperação do próprio resíduo (ordinal exato + correlação por canal).
@@ -215,7 +226,7 @@ def e5_residuo(Itr, ytr, Ite, yte, ste, Ete, parts, bits, tau, n=300):
         ax[4].bar(np.arange(3) + (j - 1) * w, [out[t][m] for t in tags], w, label=m)
     ax[4].set_xticks(range(3)); ax[4].set_xticklabels(["A", "B", "C"], fontsize=8)
     ax[4].set_title("carga × recuperação do resíduo"); ax[4].set_ylim(0, 1.02); ax[4].legend(fontsize=7)
-    fig.suptitle("E5 — a mesma energia de resíduo, três destinos", fontsize=11)
+    fig.suptitle("E5 — o mesmo estado residual, três codificações", fontsize=11)
     fig.tight_layout(); fig.savefig(os.path.join(FIG, "residuo.png"), dpi=130); plt.close(fig)
     return out
 
@@ -517,8 +528,301 @@ def e9_chave_residuo():
                 candidatos_testados=achados, chave_recuperada=chave,
                 segundos=round(time.time() - t0, 3),
                 roundtrip_com_chave_exata=(G.digits_to_text(cifra(cip, 0.034521, True), base) == msg),
+                campos_nao_deterministicos=["segundos"],
                 observacao="o documento chama isso de One-Time Pad; com "
-                           "<17 bits de chave a força bruta é trivial (docs/06 §6)")
+                           "<17 bits de chave a força bruta é trivial (docs/06 §6). "
+                           "'segundos' varia por máquina e está declarado aqui como "
+                           "NÃO determinístico: nenhum teste regressa esse campo "
+                           "(MUTARIC ev, correção 1 — docs/09 §3)")
+
+
+# ================= E10: orçamento igual (MUTARIC ev §6 — docs/09) =================
+E10_PARAM = dict(T_passos=160, sementes=25, bloco=8, k_pred=5, alpha=0.15, k_w=0.8,
+                 dt=0.30, ruido=0.004, beta_mundo=0.35, l1=1.0, l2=0.0, l3=0.0,
+                 l4=0.5, eps=0.10, bins=5, seed_base=3000)
+E10_AGENTES = ("A0", "AN", "AM", "AR")
+
+
+def _e10_fluxo(sementes, T_passos, bloco, seed_base, fator=None):
+    """Fluxo do mundo: um episódio por passo, classe em BLOCOS de `bloco` passos.
+
+    A estrutura em blocos é ESCOLHA DE PROJETO (documentada em docs/09 §5): sem
+    estrutura temporal no mundo, "prever o futuro" não significa nada.
+
+    Devolve (medias, desv, turb), shape (sementes, T_passos, 6):
+      medias — conteúdo: média por canal do episódio (o que um leitor apagaria);
+      desv   — desvio padrão por canal do episódio (features para a condição (a));
+      turb   — turbulência: |medias_t − medias_{t−1}| (magnitudes de mudança).
+    `fator` (T_passos,) escala a turbulência — é por aqui que a TELEMETRIA REAL da
+    máquina entra no lugar do resíduo sintético (variante real, não determinística).
+    """
+    medias = np.zeros((sementes, T_passos, NV))
+    desv = np.zeros((sementes, T_passos, NV))
+    turb = np.zeros((sementes, T_passos, NV))
+    for s in range(sementes):
+        rng = np.random.default_rng(seed_base + 1000 + s)
+        prev = None
+        for t in range(T_passos):
+            k = (t // bloco + 3 * s) % len(CLASSES)
+            e = episode(CLASSES[k][0], CLASSES[k][1], rng)
+            medias[s, t] = e.mean(1)
+            desv[s, t] = e.std(1)
+            if prev is not None:
+                turb[s, t] = np.abs(medias[s, t] - prev)
+            prev = medias[s, t]
+    if fator is not None:
+        turb = turb * np.asarray(fator, float)[None, :, None]
+    return medias, desv, turb
+
+
+def _e10_ema(x, alpha):
+    """Mesma regra de `residuo.memoria_ema`: (1−α)·antigo + α·novo, começando em 0."""
+    out = np.zeros_like(x)
+    out[:, 0] = alpha * x[:, 0]
+    for t in range(1, x.shape[1]):
+        out[:, t] = (1 - alpha) * out[:, t - 1] + alpha * x[:, t]
+    return out
+
+
+def _e10_sinais(medias, turb, alpha, seed_an):
+    """Os quatro sinais — MESMO orçamento: 6 float64, mesma EMA α, mesma política.
+
+    A0  sem memória (sinal nulo ⇒ w = 1, igual à baseline do A0 do documento).
+    AN  ruído i.i.d. com (μ, σ) por canal do AR — controle de amplitude.
+    AM  memória convencional reconstrutiva: EMA do CONTEÚDO (médias por canal).
+    AR  resíduo MUTARIC: EMA das MAGNITUDES de mudança (regra de `memoria_ema`).
+    """
+    am = _e10_ema(medias, alpha)
+    ar = _e10_ema(turb, alpha)
+    mu, sd = ar.mean((0, 1)), ar.std((0, 1)) + 1e-9
+    an = np.random.default_rng(seed_an).normal(mu, sd, size=ar.shape)
+    return {"A0": np.zeros_like(ar), "AN": an, "AM": am, "AR": ar}
+
+
+def _e10_roda(medias, turb, sinais, p):
+    """Loop dos 4 agentes: mesma transição (`agente.transicao`), MESMO ruído por
+    semente, mesmo alvo fixo S_STAR — só o sinal que modula `w` difere.
+
+    Dois regimes de distúrbio (a fonte do distúrbio pode favorecer um memória ou
+    outra; por isso os DOIS são reportados, sem escolher o regime depois de ver):
+      conteudo  dist = β·(conteúdo − 0,5)         favorece quem lembra do conteúdo
+      mudanca   dist = β·(conteúdo_t − conteúdo_{t−1})  favorece quem detecta mudança
+    """
+    S, Tp, _ = medias.shape
+    beta = p["beta_mundo"]
+    dists = {"conteudo": beta * (medias - 0.5),
+             "mudanca": np.concatenate([np.zeros((S, 1, NV)), np.diff(medias, axis=1)], axis=1)}
+    dists["mudanca"] = beta * dists["mudanca"]
+    out, curvas = {}, {}
+    for reg, dist in dists.items():
+        J = {a: [] for a in sinais}; dm = {a: [] for a in sinais}; curva = {}
+        for s in range(S):
+            for a, sig in sinais.items():
+                rng = np.random.default_rng(p["seed_base"] + 777 + s)  # MESMO ruído p/ todos
+                X = np.full(NV, 0.5); ds = []
+                for t in range(Tp):
+                    el = sig[s, t]
+                    w = np.clip(1.0 + p["k_w"] * (el - el.mean()), 0.3, 2.0)
+                    X = A.transicao(X, S_STAR, w, rng, dt=p["dt"], ruido=p["ruido"])
+                    X = np.clip(X + dist[s, t], 0.0, 1.0)               # distúrbio do mundo
+                    ds.append(float(np.mean(np.abs(X - S_STAR))))
+                ds = np.asarray(ds)
+                # J = −λ1·distância média + λ4·fração perto do alvo (λ2=λ3=0:
+                # nenhuma variante tem ação e o custo de cómputo é idêntico por construção)
+                J[a].append(-p["l1"] * float(ds.mean()) + p["l4"] * float(np.mean(ds < p["eps"])))
+                dm[a].append(float(ds.mean()))
+                if s == 0:
+                    curva[a] = [round(float(v), 4) for v in ds[::4]]
+        out[reg] = dict(J={a: float(np.mean(v)) for a, v in J.items()},
+                        J_dp={a: float(np.std(v)) for a, v in J.items()},
+                        # MESMAS sementes em todos os agentes ⇒ comparação PAREADA
+                        # (a diferença por semente cancela a variação do mundo)
+                        delta_pareado={f"{x}-{z}":
+                                       dict(media=float((np.asarray(J[x]) - np.asarray(J[z])).mean()),
+                                            dp=float((np.asarray(J[x]) - np.asarray(J[z])).std()))
+                                       for x, z in (("AR", "AM"), ("AR", "A0"),
+                                                    ("AM", "A0"), ("AN", "A0"))},
+                        distancia_media={a: float(np.mean(v)) for a, v in dm.items()})
+        curvas[reg] = curva
+    return out, curvas
+
+
+def _e10_mi(x, y, bins=5):
+    """MI empírica por histograma (bins × bins), em bits. x, y já emparelhados."""
+    x, y = np.asarray(x, float), np.asarray(y, float)
+    if np.ptp(x) == 0 or np.ptp(y) == 0:
+        return 0.0                                # sinal constante ⇒ MI = 0
+    h, _, _ = np.histogram2d(x, y, bins=bins)
+    p = h / h.sum()
+    px, py = p.sum(1), p.sum(0)
+    nz = p > 0
+    return float(np.sum(p[nz] * np.log2(p[nz] / (px[:, None] * py[None, :])[nz])))
+
+
+def _e10_rmse(sig, feat, corte=0.7):
+    """RMSE de teste ao reconstruir `feat` (12,) de `sig` (6,) — regressão linear
+    com intercepto (lstsq) e SPLIT TEMPORAL 70/30 (sem vazamento temporal)."""
+    n = len(sig); c = int(corte * n)
+    Xtr = np.hstack([sig[:c], np.ones((c, 1))])
+    Xte = np.hstack([sig[c:], np.ones((n - c, 1))])
+    coef, *_ = np.linalg.lstsq(Xtr, feat[:c], rcond=None)
+    return float(np.sqrt(np.mean((Xte @ coef - feat[c:]) ** 2)))
+
+
+def _e10_condicoes(medias, desv, sinais, turb, p):
+    """As três condições do documento (MUTARIC ev §6):
+    (a) pouco conteúdo do passado no resíduo; (b) informação preditiva do futuro;
+    (c) J(AR) > J(AM). MI por histograma, sempre comparada ao PISO do viés
+    (MI de pares embaralhados) — MI empírica nunca é < 0, então o que se afirma
+    é o MI EXCEDENTE ao embaralhado."""
+    Tp = medias.shape[1]; k = p["k_pred"]; bins = p["bins"]
+    # ordenação temporal (t, s) para o split 70/30 ser temporal de verdade
+    tim = lambda x: x.transpose(1, 0, 2).reshape(-1, x.shape[-1])
+    feat = tim(np.concatenate([medias, desv], -1))                 # (T·S, 12)
+    rmse = {a: _e10_rmse(tim(sg), feat) for a, sg in sinais.items()}
+    y = np.linalg.norm(turb[:, k:, :], axis=2).ravel()             # carga futura em t+k
+    rng_sh = np.random.default_rng(p["seed_base"] + 91)
+    yp = rng_sh.permutation(y)
+    mi, mib = {}, {}
+    for a, sg in sinais.items():
+        per, perb = [], []
+        for i in range(NV):
+            x = sg[:, :Tp - k, i].ravel()
+            per.append(_e10_mi(x, y, bins))
+            perb.append(_e10_mi(x, yp, bins))
+        mi[a] = float(np.mean(per)); mib[a] = float(np.mean(perb))
+    exe = {a: mi[a] - mib[a] for a in sinais}
+    return rmse, mi, mib, exe
+
+
+def _e10_completo(fator=None, origem="sintético: resíduo derivado dos próprios episódios (seed fixa)"):
+    """E10 completo: sinal → quatro agentes → J nos 2 regimes + condições (a)/(b)."""
+    p = dict(E10_PARAM)
+    medias, desv, turb = _e10_fluxo(p["sementes"], p["T_passos"], p["bloco"],
+                                    p["seed_base"], fator=fator)
+    sinais = _e10_sinais(medias, turb, p["alpha"], seed_an=p["seed_base"] + 55)
+    rod, curvas = _e10_roda(medias, turb, sinais, p)
+    rmse, mi, mib, exe = _e10_condicoes(medias, desv, sinais, turb, p)
+    cond = dict(
+        a_ar_reconstroi_menos_que_am=bool(rmse["AR"] > rmse["AM"]),
+        b_mi_excesso_ar_positivo=bool(exe["AR"] > 0),
+        c_j_ar_maior_que_am_conteudo=bool(rod["conteudo"]["J"]["AR"] > rod["conteudo"]["J"]["AM"]),
+        c_j_ar_maior_que_am_mudanca=bool(rod["mudanca"]["J"]["AR"] > rod["mudanca"]["J"]["AM"]),
+    )
+    cond["c_ar_maior_nos_dois_regimes"] = bool(cond["c_j_ar_maior_que_am_conteudo"] and
+                                               cond["c_j_ar_maior_que_am_mudanca"])
+    n = int(cond["a_ar_reconstroi_menos_que_am"]) + int(cond["b_mi_excesso_ar_positivo"]) + \
+        int(cond["c_ar_maior_nos_dois_regimes"])
+    par = {r: rod[r]["delta_pareado"] for r in rod}
+    d_am = par["conteudo"]["AR-AM"]["media"]
+    d_a0 = par["conteudo"]["AR-A0"]["media"]
+    return dict(
+        origem_eventos=origem,
+        deterministico=bool(fator is None),
+        design=dict(p, agentes=list(E10_AGENTES),
+                    politica="w = clip(1 + k_w·(s − média(s)), 0,3, 2); transicao() de agente.py; "
+                             "alvo fixo S_STAR; MESMO ruído por semente em todos os agentes",
+                    orcamento="6 float64 + mesma EMA α por agente; mesmos episódios, "
+                              "sementes, horizonte e custo (λ2=λ3=0 por construção)",
+                    condicoes="(a) RMSE de reconstrução dos 12 features do conteúdo, split temporal "
+                              "70/30 · (b) MI(s_t; ||turb_{t+k}||) menos o piso embaralhado, "
+                              "k=5, histograma 5 bins · (c) J(AR) > J(AM) nos DOIS regimes",
+                    curvas="semente 0, 1 a cada 4 passos"),
+        J={r: rod[r]["J"] for r in rod},
+        J_dp={r: rod[r]["J_dp"] for r in rod},
+        distancia_media={r: rod[r]["distancia_media"] for r in rod},
+        cond_a_rmse_reconstrucao=rmse,
+        cond_b_mi_bits=mi, cond_b_mi_embaralhado_bits=mib, cond_b_mi_excesso=exe,
+        condicoes=cond,
+        comparacoes_pareadas=par,
+        veredito=f"{n} de 3 condições principais satisfeitas "
+                 f"((a) AR reconstrói menos conteúdo que AM = {cond['a_ar_reconstroi_menos_que_am']}; "
+                 f"(b) MI excedente de AR > 0 = {cond['b_mi_excesso_ar_positivo']}; "
+                 f"(c) J(AR) > J(AM) nos dois regimes = {cond['c_ar_maior_nos_dois_regimes']}). "
+                 f"Mas o ganho de AR sobre a NÃO-memória (A0) é {d_a0:+.4f} e sobre a memória "
+                 f"convencional é {d_am:+.4f} no regime conteudo — ver comparacoes_pareadas: "
+                 f"o resíduo supera a memória convencional, não a ausência de memória.",
+        curvas=curvas,
+    )
+
+
+def e10_orcamento():
+    """E10 — orçamento igual: o resíduo supera uma memória convencional do MESMO
+    tamanho? Determinístico (só episódios com seed fixa) — é o que entra no JSON."""
+    return _e10_completo()
+
+
+def e10_telemetria_real(carga):
+    """E10 com a turbulência escalada pela carga REAL desta máquina (psutil).
+
+    É o "substituir os dados sintéticos": o fator de entrada deixa de ser 1.0 fixo
+    e passa a vir da série de carga capturada (interpolação linear ao longo dos
+    passos). NÃO determinístico — gravado em resultados/telemetria_real.json,
+    nunca regressado por teste.
+    """
+    p = dict(E10_PARAM)
+    c = np.asarray(carga, float)
+    carga_i = np.interp(np.linspace(0, 1, p["T_passos"]), np.linspace(0, 1, len(c)), c)
+    out = _e10_completo(fator=0.4 + 1.2 * carga_i,
+                        origem="TELEMETRIA REAL desta máquina (psutil): turbulência × "
+                               "(0,4 + 1,2·carga), carga interpolada ao longo dos passos")
+    out["carga_interpolada"] = [round(float(v), 4) for v in carga_i]
+    return out
+
+
+def coleta_telemetria(amostras=10, intervalo=1.0):
+    """Coleta INFORMAÇÃO REAL desta máquina + amostragem ao vivo de carga, e roda o
+    E10 com a carga real no lugar do resíduo sintético.
+
+    Grava DOIS arquivos fora do resultados.json (nenhum teste os regressa):
+      resultados/maquina.json         descrição estática da máquina (metadados)
+      resultados/telemetria_real.json amostras ao vivo + E10-real (NÃO determinístico)
+
+    Nunca roda dentro de run_all.py nem da CI (reprodutibilidade). Requer psutil.
+    """
+    import platform
+    import datetime
+    try:
+        import psutil
+    except ImportError:
+        return {"erro": "psutil não instalado — `pip install psutil` para coletar"}
+    os.makedirs(RES, exist_ok=True)
+    estatico = dict(
+        sistema=f"{platform.system()} {platform.release()}",
+        edicao=platform.version(),
+        arquitetura=platform.machine(),
+        processador=platform.processor() or "desconhecido",
+        nucleos_logicos=os.cpu_count(),
+        memoria_total_gb=round(psutil.virtual_memory().total / 2 ** 30, 2),
+        disco_total_gb=round(psutil.disk_usage(RAIZ).total / 2 ** 30, 2),
+        python=sys.version.split()[0],
+        numpy=np.__version__, matplotlib=matplotlib.__version__, psutil=psutil.__version__,
+        papel="metadados da máquina que produz os números publicados; não participa "
+              "de nenhum teste nem de run_all.py",
+    )
+    cpu, mem, carga = [], [], []
+    for _ in range(int(amostras)):
+        cpu.append(float(psutil.cpu_percent(interval=float(intervalo))))
+        mem.append(float(psutil.virtual_memory().percent))
+        carga.append(0.5 * cpu[-1] / 100.0 + 0.5 * mem[-1] / 100.0)
+    try:
+        st = psutil.sensors_temperatures() or {}
+        temps = {k: float(np.mean([x.current for x in v])) for k, v in st.items() if v}
+    except (AttributeError, NotImplementedError):
+        temps = {}
+    with open(os.path.join(RES, "maquina.json"), "w", encoding="utf-8") as f:
+        json.dump(estatico, f, indent=1, ensure_ascii=False)
+    real = e10_telemetria_real(carga)
+    real.update(quando_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+                cpu_pct=cpu, ram_pct=mem, temperaturas_C=temps,
+                amostras=int(amostras), intervalo_s=float(intervalo),
+                deterministico=False,
+                aviso="hardware real: estes valores mudam a cada coleta; nenhum teste "
+                      "regride este arquivo (regra da correção 1 — docs/09 §3)")
+    with open(os.path.join(RES, "telemetria_real.json"), "w", encoding="utf-8") as f:
+        json.dump(real, f, indent=1, ensure_ascii=False)
+    return dict(maquina=estatico, telemetria_real=real["veredito"], arquivos=[
+        "resultados/maquina.json", "resultados/telemetria_real.json"])
 
 
 def main():
@@ -653,6 +957,8 @@ def main():
     res["E7_residuo_mutacore"] = e7_residuo_mutacore(Ite, yte, ste, Ete, parts, evaluate)
     res["E8_sobrevivencia"] = e8_sobrevivencia()
     res["E9_chave_residuo"] = e9_chave_residuo()
+    # ---- orçamento igual: resíduo × memória convencional (MUTARIC ev §6, docs/09) ----
+    res["E10_orcamento"] = e10_orcamento()
 
     # ---- demonstração: mensagem de texto em vários glifos emocionais ----
     msg = "Ganhei!"
@@ -773,6 +1079,35 @@ def figuras(res, Ite, yte, Gtr, ytr, tau):
     fig.suptitle("MutaCore/RIC: reprodução, magnitude e ablação (docs/06)", fontsize=10)
     fig.tight_layout(); fig.savefig(os.path.join(FIG, "mutacore.png"), dpi=130); plt.close(fig)
 
+    # 9) E10 — orçamento igual: memória convencional × resíduo (docs/09)
+    d10 = res["E10_orcamento"]; ags = list(E10_AGENTES); regs = list(d10["J"])
+    fig, ax = plt.subplots(2, 2, figsize=(11, 7)); w = 0.35
+    cores = ["gray", "tab:orange", "tab:blue", "tab:red"]
+    for r, reg in enumerate(regs):
+        ax[0, 0].bar(np.arange(4) + (r - 0.5) * w, [d10["J"][reg][a] for a in ags],
+                     w, label=f"regime {reg}")
+    ax[0, 0].set_xticks(range(4)); ax[0, 0].set_xticklabels(ags)
+    ax[0, 0].set_title("J (maior = melhor: −distância + acertos)", fontsize=9)
+    ax[0, 0].legend(fontsize=7); ax[0, 0].grid(alpha=.3, axis="y")
+    ax[0, 1].bar(range(4), [d10["cond_a_rmse_reconstrucao"][a] for a in ags], 0.6, color=cores)
+    ax[0, 1].set_xticks(range(4)); ax[0, 1].set_xticklabels(ags)
+    ax[0, 1].set_title("(a) RMSE ao reconstruir o conteúdo (menor = mais conteúdo)", fontsize=9)
+    ax[0, 1].grid(alpha=.3, axis="y")
+    ax[1, 0].bar(range(4), [d10["cond_b_mi_excesso"][a] for a in ags], 0.6, color=cores)
+    ax[1, 0].set_xticks(range(4)); ax[1, 0].set_xticklabels(ags)
+    ax[1, 0].axhline(0, color="black", lw=0.8)
+    ax[1, 0].set_title("(b) MI excedente com o futuro (bits; abaixo de 0 = só viés)", fontsize=9)
+    ax[1, 0].grid(alpha=.3, axis="y")
+    for a in ags:
+        ax[1, 1].plot(d10["curvas"][regs[0]][a], label=a)
+    ax[1, 1].set_title(f"Distância ao alvo, regime {regs[0]} (semente 0)", fontsize=9)
+    ax[1, 1].legend(fontsize=7); ax[1, 1].grid(alpha=.3)
+    fig.suptitle("E10 — orçamento igual: memória convencional × resíduo (docs/09)", fontsize=10)
+    fig.tight_layout(); fig.savefig(os.path.join(FIG, "e10_orcamento.png"), dpi=130); plt.close(fig)
+
 
 if __name__ == "__main__":
-    main()
+    if "--telemetria" in sys.argv:
+        print(json.dumps(coleta_telemetria(), indent=1, ensure_ascii=False, default=str))
+    else:
+        main()
