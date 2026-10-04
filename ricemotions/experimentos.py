@@ -18,8 +18,13 @@ E9  MutaCore: o espaço de chave da cifra acoplada ao resíduo (§F) e força br
 E10 Orçamento igual: o resíduo supera uma memória convencional de MESMO orçamento?
     Quatro agentes (A0/AN/AM/AR), três condições (pouco conteúdo passado, informação
     preditiva do futuro, J) — especificação do documento MUTARIC ev (docs/09).
+E10b Controles fortes de memória com 24 bits por agente (EMA assinada, magnitude,
+    janela curta, recorrente aprendido; ID + OOD) — port fiel do e10b.py externo
+    (auditoria MUTARIC ev 2, docs/10): a formulação forte é refutada e isto é
+    publicado com a mesma proeminência dos resultados positivos.
 
-Análise, vereditos e provas: docs/06_analise_mutacore.md e docs/09_analise_mutaric_ev.md.
+Análise, vereditos e provas: docs/06_analise_mutacore.md, docs/09_analise_mutaric_ev.md
+e docs/10_analise_mutaric_ev2.md (E10b: controles fortes de memória, 24 bits).
 Coleta REAL de informação desta máquina (não determinística, fora do run_all):
     python -m ricemotions.experimentos --telemetria
 """
@@ -825,6 +830,185 @@ def coleta_telemetria(amostras=10, intervalo=1.0):
         "resultados/maquina.json", "resultados/telemetria_real.json"])
 
 
+# =========================================================================
+# E10b — controles fortes de memória, orçamento de 24 bits
+# Port FIEL do e10b.py externo (auditoria MUTARIC ev 2 — docs/10): a execução
+# local do arquivo deles (2026-10-04, 108 s) reproduziu 58/58 números; este
+# port regera exatamente os mesmos valores (test_e10b_reproduz_o_documento).
+# Resultado: o resíduo quadrático NÃO vence as memórias fortes de igual
+# orçamento — refutação da formulação forte, publicada com a mesma
+# proeminência (regra do projeto). Determinístico: tudo é semeado.
+# =========================================================================
+E10B_N = 6                       # canais
+E10B_BITS = 4                    # bits por canal (quantizador Q4)
+E10B_BUDGET = E10B_N * E10B_BITS  # 24 bits mutáveis por agente
+E10B_KINDS = ("none", "signed_ema", "magnitude_ema",
+              "square_ema", "short_window", "learned_recurrent")
+E10B_CFG = dict(steps=360, block=45, alpha=0.18, base_gain=0.10,
+                memory_gain=0.38, action_budget=1.0, low=0.010,
+                high=0.090, ood_scale=1.35, target=0.72,
+                train_sequences=180, ridge=1e-3)
+
+
+def _e10b_q(x, bits=E10B_BITS):
+    """Quantizador de `bits` grades: clip em [0,1] e rótulo na grade de 1/15."""
+    lev = 2 ** bits - 1
+    return np.rint(np.clip(x, 0, 1) * lev) / lev
+
+
+def _e10b_schedule(c, rng, ood):
+    """Blocos com um canal 'quente' por bloco; OOD encurta o bloco (mais trocas)."""
+    block = max(12, c["block"] // 2) if ood else c["block"]
+    nb = int(np.ceil(c["steps"] / block)); order = []
+    while len(order) < nb:
+        order.extend(rng.permutation(E10B_N).tolist())
+    return np.repeat(order[:nb], block)[:c["steps"]]
+
+
+def _e10b_dseq(seed, c, ood=False):
+    """Perturbações de média nula; o canal quente tem variância `high` (OOD: ×1,35)."""
+    rng = np.random.default_rng(seed)
+    hot = _e10b_schedule(c, rng, ood); arr = []
+    for h in hot:
+        sig = np.full(E10B_N, c["low"])
+        sig[h] = c["high"] * (c["ood_scale"] if ood else 1.0)
+        arr.append(rng.normal(0, sig))
+    return np.asarray(arr)
+
+
+def _e10b_train(c):
+    """Ridge: y_(t+1) ~= [y_t, u_t, 1]·W com u = Δ² normalizado (só sementes de treino)."""
+    X, Y = [], []
+    for s in range(c["train_sequences"]):
+        d = _e10b_dseq(100000 + s, c, False)
+        u = np.clip(d * d / c["high"] ** 2, 0, 1); prev = np.zeros(E10B_N)
+        for t in range(len(u) - 1):
+            X.append(np.r_[prev, u[t], 1.0]); Y.append(u[t + 1]); prev = u[t + 1]
+    X = np.asarray(X); Y = np.asarray(Y)
+    reg = c["ridge"] * np.eye(X.shape[1]); reg[-1, -1] = 0
+    return np.linalg.solve(X.T @ X + reg, X.T @ Y)
+
+
+class _e10b_Store:
+    """Estado mutável de UM agente. `square_ema` É o resíduo quadrático."""
+
+    def __init__(self, kind, c, W=None):
+        self.kind = kind; self.c = c
+        self.z = np.zeros(E10B_N); self.W = W
+        self.packed = 0; self.phase = 0
+
+    def salience(self):
+        if self.kind == "none":
+            return np.zeros(E10B_N)
+        if self.kind == "signed_ema":
+            return np.abs(2 * self.z - 1)
+        if self.kind == "short_window":
+            vals = np.array([(self.packed >> (2 * i)) & 3
+                             for i in range(2 * E10B_N)]).reshape(2, E10B_N)
+            return vals.mean(0) / 3.0
+        return self.z
+
+    def update(self, d):
+        c = self.c; a = c["alpha"]; sc = c["high"]
+        if self.kind == "none":
+            pass
+        elif self.kind == "signed_ema":
+            u = .5 + .5 * np.clip(d / sc, -1, 1)
+            self.z = _e10b_q((1 - a) * self.z + a * u)
+        elif self.kind == "magnitude_ema":
+            u = np.clip(np.abs(d) / sc, 0, 1)
+            self.z = _e10b_q((1 - a) * self.z + a * u)
+        elif self.kind == "square_ema":
+            u = np.clip(d * d / (sc * sc), 0, 1)
+            self.z = _e10b_q((1 - a) * self.z + a * u)
+        elif self.kind == "short_window":
+            # 2 amostras × 2 bits × 6 canais = exatamente 24 bits em UM inteiro
+            vals = np.rint(np.clip(np.abs(d) / sc, 0, 1) * 3).astype(int)
+            for j, v in enumerate(vals):
+                sh = 2 * (self.phase * E10B_N + j)
+                self.packed = (self.packed & ~(3 << sh)) | (int(v) << sh)
+            self.phase = 1 - self.phase
+        elif self.kind == "learned_recurrent":
+            u = np.clip(d * d / (sc * sc), 0, 1)
+            self.z = _e10b_q(np.r_[self.z, u, 1.0] @ self.W)
+
+
+def _e10b_episode(seed, kind, c, W, ood=False):
+    dseq = _e10b_dseq(seed, c, ood)
+    x = np.full(E10B_N, c["target"]); st = _e10b_Store(kind, c, W)
+    loss = eff = 0.0; traces = []; signs = []
+    for d in dseq:
+        sal = st.salience(); s = sal.sum()
+        alloc = (sal / s if s > 1e-12 else np.full(E10B_N, 1.0 / E10B_N)) * c["action_budget"]
+        gain = c["base_gain"] + c["memory_gain"] * alloc
+        x = np.clip(x + gain * (c["target"] - x) + d, 0, 1)
+        loss += np.mean((x - c["target"]) ** 2)
+        eff += np.mean((gain - c["base_gain"]) ** 2)
+        st.update(d)
+        traces.append(st.salience().copy()); signs.append((d > 0).astype(np.uint8))
+    n = c["steps"]
+    return dict(loss=loss / n, score=-(loss + 0.08 * eff) / n,
+                trace=np.asarray(traces), sign=np.asarray(signs))
+
+
+def _e10b_ci(d, seed=93, n=5000):
+    """IC95% bootstrap pareado (reamostragem das diferenças por semente)."""
+    rng = np.random.default_rng(seed)
+    z = rng.choice(d, (n, len(d)), replace=True).mean(1)
+    return [float(np.quantile(z, .025)), float(np.quantile(z, .975))]
+
+
+def _e10b_leakage(runs):
+    """Decodificador de sinal: metade 1 treina limiar por canal, metade 2 testa."""
+    X = np.concatenate([r["trace"] for r in runs])
+    Y = np.concatenate([r["sign"] for r in runs]); cut = len(X) // 2
+    P = np.zeros_like(Y[cut:])
+    for j in range(E10B_N):
+        a = X[:cut, j][Y[:cut, j] == 0].mean(); b = X[:cut, j][Y[:cut, j] == 1].mean()
+        P[:, j] = (np.abs(X[cut:, j] - b) < np.abs(X[cut:, j] - a))
+    return float((P == Y[cut:]).mean())
+
+
+def e10b_controles(n_seeds=200, train_sequences=None):
+    """E10b: resíduo quadrático × 5 memórias fortes, 24 bits cada, ID e OOD.
+
+    Hipótese registrada (MUTARIC ev 2): `square_ema` deve ser comparada a
+    magnitude, janela curta e recorrente aprendido — não só à assinada.
+    """
+    c = dict(E10B_CFG)
+    if train_sequences is not None:
+        c["train_sequences"] = int(train_sequences)
+    W = _e10b_train(c)
+    res = {"protocolo": dict(
+        config=c, sementes_pareadas=int(n_seeds), bits_mutaveis=E10B_BUDGET,
+        treino_recorrente=f"sementes 100000..{100000 + c['train_sequences'] - 1}; "
+                          f"avaliacao 50000..; sem sobreposicao",
+        hipotese="square_ema deve ser comparada a magnitude, janela curta e "
+                 "recorrente aprendido")}
+    for split, ood in (("id", False), ("ood", True)):
+        raw = {k: [_e10b_episode(50000 + s, k, c, W, ood) for s in range(n_seeds)]
+               for k in E10B_KINDS}
+        res[split] = {}
+        for k, rs in raw.items():
+            sc = np.array([r["score"] for r in rs]); lo = np.array([r["loss"] for r in rs])
+            res[split][k] = dict(score_medio=float(sc.mean()), loss_medio=float(lo.mean()),
+                                 desvio_score=float(sc.std(ddof=1)),
+                                 vazamento_sinal=.5 if k == "none" else _e10b_leakage(rs))
+        base = np.array([r["score"] for r in raw["square_ema"]])
+        res[split]["comparacoes_square_ema"] = {}
+        for k in ("magnitude_ema", "short_window", "learned_recurrent"):
+            d = base - np.array([r["score"] for r in raw[k]]); ic = _e10b_ci(d, 100 + len(k))
+            res[split]["comparacoes_square_ema"][k] = dict(
+                delta=float(d.mean()), ic95=ic, vitorias=float((d > 0).mean()),
+                conclusao=("favoravel" if ic[0] > 0 else
+                           ("desfavoravel" if ic[1] < 0 else "inconclusiva")))
+        # vencedor escolhido só depois de todas as métricas registradas
+        res[split]["melhor_score"] = max(E10B_KINDS, key=lambda k: res[split][k]["score_medio"])
+    res["pesos_recorrentes"] = dict(forma=list(W.shape),
+                                    norma_frobenius=float(np.linalg.norm(W)))
+    return res
+
+
 def main():
     rng = np.random.default_rng(0)
     os.makedirs(FIG, exist_ok=True); os.makedirs(RES, exist_ok=True)
@@ -959,6 +1143,8 @@ def main():
     res["E9_chave_residuo"] = e9_chave_residuo()
     # ---- orçamento igual: resíduo × memória convencional (MUTARIC ev §6, docs/09) ----
     res["E10_orcamento"] = e10_orcamento()
+    # ---- controles fortes de memória, 24 bits (auditoria MUTARIC ev 2, docs/10) ----
+    res["E10b_controles"] = e10b_controles()
 
     # ---- demonstração: mensagem de texto em vários glifos emocionais ----
     msg = "Ganhei!"
@@ -1104,6 +1290,30 @@ def figuras(res, Ite, yte, Gtr, ytr, tau):
     ax[1, 1].legend(fontsize=7); ax[1, 1].grid(alpha=.3)
     fig.suptitle("E10 — orçamento igual: memória convencional × resíduo (docs/09)", fontsize=10)
     fig.tight_layout(); fig.savefig(os.path.join(FIG, "e10_orcamento.png"), dpi=130); plt.close(fig)
+
+    # 10) E10b — controles fortes de memória, 24 bits (MUTARIC ev 2, docs/10)
+    d10b = res["E10b_controles"]; ks = list(E10B_KINDS)
+    rot = ["sem\nmemória", "EMA\nassinada", "EMA\nmagnitude", "resíduo\nquadrático",
+           "janela\ncurta", "recorrente\naprendido"]
+    cores = ["gray", "tab:orange", "tab:green", "tab:red", "tab:blue", "tab:purple"]
+    fig, ax = plt.subplots(2, 2, figsize=(11, 7))
+    for col, split in enumerate(("id", "ood")):
+        ax[0, col].bar(range(6), [d10b[split][k]["score_medio"] for k in ks], color=cores)
+        ax[0, col].set_xticks(range(6)); ax[0, col].set_xticklabels(rot, fontsize=7)
+        ax[0, col].set_title(f"score {'ID' if split == 'id' else 'OOD'} (maior = melhor)",
+                             fontsize=9)
+        ax[0, col].grid(alpha=.3, axis="y")
+        cs = d10b[split]["comparacoes_square_ema"]; ck = list(cs)
+        meio = [cs[k]["delta"] for k in ck]
+        err = [[cs[k]["delta"] - cs[k]["ic95"][0] for k in ck],
+               [cs[k]["ic95"][1] - cs[k]["delta"] for k in ck]]
+        ax[1, col].barh(range(3), meio, xerr=err, color="tab:red", height=.5)
+        ax[1, col].axvline(0, color="black", lw=.8)
+        ax[1, col].set_yticks(range(3)); ax[1, col].set_yticklabels(ck, fontsize=7)
+        ax[1, col].set_title("Δ pareado: resíduo − controle (IC95%)", fontsize=9)
+        ax[1, col].grid(alpha=.3, axis="x")
+    fig.suptitle("E10b — controles fortes de memória, 24 bits por agente (docs/10)", fontsize=10)
+    fig.tight_layout(); fig.savefig(os.path.join(FIG, "e10b_controles.png"), dpi=130); plt.close(fig)
 
 
 if __name__ == "__main__":

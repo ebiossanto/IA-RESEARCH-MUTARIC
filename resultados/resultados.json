@@ -1318,7 +1318,7 @@
   "bits_de_chave": 16.609654901315086,
   "candidatos_testados": 3453,
   "chave_recuperada": 0.03452,
-  "segundos": 0.281,
+  "segundos": 0.328,
   "roundtrip_com_chave_exata": true,
   "campos_nao_deterministicos": [
    "segundos"
@@ -1809,6 +1809,171 @@
      0.064
     ]
    }
+  }
+ },
+ "E10b_controles": {
+  "protocolo": {
+   "config": {
+    "steps": 360,
+    "block": 45,
+    "alpha": 0.18,
+    "base_gain": 0.1,
+    "memory_gain": 0.38,
+    "action_budget": 1.0,
+    "low": 0.01,
+    "high": 0.09,
+    "ood_scale": 1.35,
+    "target": 0.72,
+    "train_sequences": 180,
+    "ridge": 0.001
+   },
+   "sementes_pareadas": 200,
+   "bits_mutaveis": 24,
+   "treino_recorrente": "sementes 100000..100179; avaliacao 50000..; sem sobreposicao",
+   "hipotese": "square_ema deve ser comparada a magnitude, janela curta e recorrente aprendido"
+  },
+  "id": {
+   "none": {
+    "score_medio": -0.0045861890703666405,
+    "loss_medio": 0.00426530018147775,
+    "desvio_score": 0.0006479966194958362,
+    "vazamento_sinal": 0.5
+   },
+   "signed_ema": {
+    "score_medio": -0.0036773556279558013,
+    "loss_medio": 0.003256331552040809,
+    "desvio_score": 0.00036961759767331674,
+    "vazamento_sinal": 0.5057268518518518
+   },
+   "magnitude_ema": {
+    "score_medio": -0.003541147936410137,
+    "loss_medio": 0.002970934561077736,
+    "desvio_score": 0.0003233327625732612,
+    "vazamento_sinal": 0.5017222222222222
+   },
+   "square_ema": {
+    "score_medio": -0.0036683832512623177,
+    "loss_medio": 0.0028283282256750474,
+    "desvio_score": 0.00028787095076246325,
+    "vazamento_sinal": 0.5017685185185186
+   },
+   "short_window": {
+    "score_medio": -0.003705430681423977,
+    "loss_medio": 0.0024480798620268875,
+    "desvio_score": 0.00023734275838382317,
+    "vazamento_sinal": 0.4996851851851852
+   },
+   "learned_recurrent": {
+    "score_medio": -0.003478027493645819,
+    "loss_medio": 0.002442425270330531,
+    "desvio_score": 0.0002475132001185081,
+    "vazamento_sinal": 0.501199074074074
+   },
+   "comparacoes_square_ema": {
+    "magnitude_ema": {
+     "delta": -0.00012723531485218053,
+     "ic95": [
+      -0.00013703746864229385,
+      -0.00011705342915777966
+     ],
+     "vitorias": 0.055,
+     "conclusao": "desfavoravel"
+    },
+    "short_window": {
+     "delta": 3.7047430161659805e-05,
+     "ic95": [
+      2.2249906893094922e-05,
+      5.1672179859156624e-05
+     ],
+     "vitorias": 0.71,
+     "conclusao": "favoravel"
+    },
+    "learned_recurrent": {
+     "delta": -0.00019035575761649866,
+     "ic95": [
+      -0.00020459283994425816,
+      -0.00017620622145232118
+     ],
+     "vitorias": 0.02,
+     "conclusao": "desfavoravel"
+    }
+   },
+   "melhor_score": "learned_recurrent"
+  },
+  "ood": {
+   "none": {
+    "score_medio": -0.007148329433574181,
+    "loss_medio": 0.006827440544685288,
+    "desvio_score": 0.001134868922105935,
+    "vazamento_sinal": 0.5
+   },
+   "signed_ema": {
+    "score_medio": -0.005742729758052313,
+    "loss_medio": 0.005307565945557274,
+    "desvio_score": 0.0006474472197800773,
+    "vazamento_sinal": 0.5055092592592593
+   },
+   "magnitude_ema": {
+    "score_medio": -0.0054634801556654455,
+    "loss_medio": 0.004893203627200837,
+    "desvio_score": 0.0005883634936363843,
+    "vazamento_sinal": 0.49905555555555553
+   },
+   "square_ema": {
+    "score_medio": -0.005487164317461279,
+    "loss_medio": 0.0048091213141014935,
+    "desvio_score": 0.0005657921929974668,
+    "vazamento_sinal": 0.4988611111111111
+   },
+   "short_window": {
+    "score_medio": -0.00532752926812258,
+    "loss_medio": 0.004045360494532951,
+    "desvio_score": 0.00039575487350797435,
+    "vazamento_sinal": 0.4985046296296296
+   },
+   "learned_recurrent": {
+    "score_medio": -0.005172142499809558,
+    "loss_medio": 0.003941188291144267,
+    "desvio_score": 0.00038120923325753685,
+    "vazamento_sinal": 0.4989675925925926
+   },
+   "comparacoes_square_ema": {
+    "magnitude_ema": {
+     "delta": -2.3684161795833247e-05,
+     "ic95": [
+      -3.320293398858517e-05,
+      -1.4197186755385082e-05
+     ],
+     "vitorias": 0.325,
+     "conclusao": "desfavoravel"
+    },
+    "short_window": {
+     "delta": -0.00015963504933869915,
+     "ic95": [
+      -0.0001930103061513606,
+      -0.00012721780257031194
+     ],
+     "vitorias": 0.265,
+     "conclusao": "desfavoravel"
+    },
+    "learned_recurrent": {
+     "delta": -0.0003150218176517201,
+     "ic95": [
+      -0.00035205099923561175,
+      -0.00028123859284673785
+     ],
+     "vitorias": 0.04,
+     "conclusao": "desfavoravel"
+    }
+   },
+   "melhor_score": "learned_recurrent"
+  },
+  "pesos_recorrentes": {
+   "forma": [
+    13,
+    6
+   ],
+   "norma_frobenius": 1.4127011259289992
   }
  },
  "demo_mensagem": {

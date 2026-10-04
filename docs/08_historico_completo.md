@@ -26,7 +26,7 @@ imagem, e a imagem é relida por um código que decodifica família, procedênci
 carga — com a pergunta constante: *isso é leitura relacional ou reconhecimento de
 um roteiro?* (`docs/02` A6).
 
-## 2. Cronologia — sete ciclos em um dia (04/10/2026)
+## 2. Cronologia — oito ciclos em um dia (04/10/2026)
 
 | ciclo | commit | o que mudou |
 |---|---|---|
@@ -36,7 +36,8 @@ um roteiro?* (`docs/02` A6).
 | **3** | `8800c9f` | **ciclo MutaCore**: análise do anexo `MUTACORE _ RIC.md` com provas (`docs/06`), `homeostase.py`, E7–E9, testes 21 → **27**, `figs/mutacore.png` |
 | **4** | `d88ef3f` | **GitHub + CI**: repositório `ebiossanto/IA-RESEARCH-MUTARIC` (privado na época; **tornado público** em 04/10/2026), `.github/workflows/ci.yml` (Windows + Linux, 27/27), badge, revisão de consistência (P0.5 fecha) |
 | **5** | `d29ac4c` | **organização final**: `docs/00` (índice), `docs/07` (continuidade), `docs/08` (este), auditoria de consistência entre documentos, chave `tau_medio_landauer_off` no JSON (ajustes seguintes: `abfe920`, `b2d0759`) |
-| **6** (atual) | — | **ciclo MUTARIC ev** (`docs/09`): auditoria externa analisada com provas — 5 correções adotadas (2 redacionais no código/docs, 2 viram **P1.9**/**P2.6**), **E10** (paridade de orçamento, 3/3 condições), coleta **real** desta máquina (`maquina.json`, `telemetria_real.json`), testes 27 → **30**, figuras 8 → **9** |
+| **6** | `742a811` | **ciclo MUTARIC ev** (`docs/09`): auditoria externa analisada com provas — 5 correções adotadas (2 redacionais no código/docs, 2 viram **P1.9**/**P2.6**), **E10** (paridade de orçamento, 3/3 condições), coleta **real** desta máquina (`maquina.json`, `telemetria_real.json`), testes 27 → **30**, figuras 8 → **9** |
+| **7** (atual) | — | **ciclo MUTARIC ev 2** (`docs/10`): segunda auditoria externa executada e reproduzida (**58/58 números**) — **E10b** (controles fortes de memória, 24 bits, ID + OOD) portado com veredito nulo publicado (*o resíduo não vence memórias fortes*), limitação do comparador no `docs/09` §7.6, novas pendências **P1.10**/**P2.7**, testes 30 → **32**, figuras 9 → **10** |
 
 Linha do tempo interna (ciclos 1–3): as datas e o "antes/depois" de cada correção
 estão em `docs/01` §7, com a nota de cronologia sobre as correções do E5/E6.
@@ -58,6 +59,7 @@ estão em `docs/01` §7, com a nota de cronologia sobre as correções do E5/E6.
 | **E8** | o benchmark mede emoção? | reprodução fiel + ablação 2×2×2 + varredura + regime letal | 1000×1000 = **0%**; morte impossível (T fixo **0,840 < 0,95**, `E` mín **0,185**); letal: **47,4 ± 5,4** (S\* din) × **68,0** (S\* fixo) × 32,0 ⇒ S\* dinâmico **−20,6 ciclos**, recarregar cedo **+36** (**`E8_sobrevivencia`**) |
 | **E9** | a cifra com chave = resíduo tem quantos bits? | varredura de `R_L ∈ [0,1)` passo 10⁻⁵ + força bruta | **100001 chaves = 16,61 bits**; chave `0,03452` recuperada em **≈0,3 s** nesta máquina (3453 candidatos; `segundos` declarado não determinístico — **`E9_chave_residuo`**) |
 | **E10** | com orçamento IGUAL, o resíduo supera memória convencional? | 4 agentes (sem memória / ruído / conteúdo / resíduo), 2 regimes de distúrbio, comparação pareada | **3/3 condições**: reconstrói menos conteúdo (RMSE **0,1018** vs **0,0827**), MI excedente **+0,0165 bits** (ruído ≈ 0), J(AR) > J(AM) (**t ≈ 12** e **t ≈ 6**) — mas **AR ≈ A0** (nulo): supera a memória convencional, não a ausência de memória (**`E10_orcamento`**) |
+| **E10b** | e contra memórias **fortes** de igual orçamento (24 bits)? | 6 memórias (sem / assinada / magnitude / resíduo quadrático / janela / recorrente aprendido), 200 sementes pareadas, IC bootstrap, ID + OOD | **formulação forte refutada**: o resíduo perde para magnitude (ID **−0,0001272**) e para o recorrente (ID **−0,0001904**, OOD **−0,0003150**; ICs fora de zero); vence só a janela no ID; melhor = recorrente; nenhuma memória recupera o sinal (≈ **0,5**) (**`E10b_controles`**) |
 
 Fora dos "E": `varredura_tau_validacao` (τ=**0,7** escolhido **na validação**, 0,9256
 com 139 grafos) e `demo_mensagem` ("Ganhei!", 11 glifos, 11/11 símbolos até σ=0,30).
@@ -85,6 +87,13 @@ com 139 grafos) e `demo_mensagem` ("Ganhei!", 11 glifos, 11/11 símbolos até σ
   virou **P2.6**), a proposição `F(X,R) ≠ F(X,R')` confirmada nos testes, o
   **E10** implementado (orçamento igual, 3/3 condições + ressalva AR ≈ A0) e a
   coleta **real** desta máquina em arquivos próprios não regressados.
+- **Ciclo 7 (`docs/10`):** verificação externa da segunda auditoria
+  **MUTARIC ev 2** — o `e10b.py` deles executado aqui (**58/58 números
+  reproduzidos**) e portado como **E10b**; veredito nulo publicado com a mesma
+  proeminência (*contra memórias fortes de igual orçamento o resíduo não
+  vence*), o comparador fraco virou limitação escrita (`docs/09` §7.6), a
+  parte não fornecida (`e10.py`, testes) ficou **não verificável**, e da
+  auditoria saíram **P1.10** e **P2.7**.
 
 ## 4. Mudanças de direção
 
@@ -154,7 +163,7 @@ Os achados que **pioraram a própria história** e por isso estão publicados:
    `docs/00` §Convenções e `docs/07` §3.
 2. **Resultado nulo publicado com a mesma proeminência** do positivo (critério de
    pronto, `docs/04`).
-3. **Os números publicados não mudam silenciosamente** — 30 testes de regressão e
+3. **Os números publicados não mudam silenciosamente** — 32 testes de regressão e
    CI em duas plataformas; campos não determinísticos são **declarados**
    (`E9.campos_nao_deterministicos`, `docs/09` §3).
 4. **I/O e telemetria fora do núcleo** — simulação determinística e testável.
@@ -172,24 +181,36 @@ Os achados que **pioraram a própria história** e por isso estão publicados:
 - **`docs/09` §7 (E10):** uma política única para todos os agentes limita o uso
   do conteúdo por AM; MI por histograma de 5 bins com piso embaralhado único;
   ambiente (blocos, β, ε) escolhido por nós; **AR ≈ A0** é um resultado nulo
-  de primeira ordem; a carga real desta máquina (~0,55) ficou perto da normalização.
+  de primeira ordem; a carga real desta máquina (~0,55) ficou perto da
+  normalização; e (nova, §7.6) **o comparador AM é fraco** — o E10b externo
+  mostrou que com memórias fortes de igual orçamento o resíduo não vence
+  (`docs/10`).
+- **`docs/10` §6 (E10b):** a parte 1 do documento (`e10.py`, 120 sementes) e
+  os arquivos de teste deles **não foram fornecidos** e ficam não verificáveis;
+  os 78 pesos do recorrente estão **fora** dos 24 bits (declarados: estado
+  mutável igual, parâmetros livres); o peso 0,08 do esforço no score é grau de
+  liberdade sem análise de sensibilidade; o decodificador é simples ("≈ acaso"
+  vale para *esse* decodificador); o ambiente deles é sintético (hot-spots de
+  variância) e a refutação vale dentro dele — a ponte com o nosso é **P1.10**.
 - **`docs/02` A2(b) / A5:** histerese de τ e forma canônica do grafo **ainda
   abertas** (P1.8 / P1.5).
 
 ## 6. Estado atual e fila
 
 - **Repositório:** `github.com/ebiossanto/IA-RESEARCH-MUTARIC` (**público**, `main`);
-  CI verde em Windows e Ubuntu (30/30); histórico completo em `git log` (7 ciclos, §2).
+  CI verde em Windows e Ubuntu (32/32); histórico completo em `git log` (8 ciclos, §2).
 - **Código:** 6 módulos (`mundo`, `glifo`, `residuo`, `agente`, `homeostase`,
-  `experimentos`) + `tests/` (30) + `run_all.py`.
-- **Saídas:** 9 figuras em `figs/`, `resultados/resultados.json` (determinístico;
+  `experimentos`) + `tests/` (32) + `run_all.py`.
+- **Saídas:** 10 figuras em `figs/`, `resultados/resultados.json` (determinístico;
   `E9.segundos` está declarado em `campos_nao_deterministicos` e varia entre
   máquinas), `resultados/maquina.json` + `resultados/telemetria_real.json`
   (coleta real, `deterministico: false`, nunca regressada).
-- **Documentos:** `docs/00` a `docs/09` (dez), `README.md` (PT) e `README.en.md`.
+- **Documentos:** `docs/00` a `docs/10` (onze), `README.md` (PT) e `README.en.md`.
 - **Fila:** P1.1 baseline séria → P1.2 teste de hipótese → P1.3 transformações
-  perceptivas → P1.4–P1.9 (novo: protocolo hierárquico) → P2.1 `teoa/core.py` de
-  verdade → P2.3 loop de dois agentes → P2.6 (novo: agente sem evento externo) →
+  perceptivas → P1.4–P1.10 (novo: protocolo hierárquico + **controles fortes
+  de memória no E10**) → P2.1 `teoa/core.py` de
+  verdade → P2.3 loop de dois agentes → P2.6 (novo: agente sem evento externo)
+  → P2.7 (novo: E10c, resíduo preditivo com não reconstrução) →
   P3 publicação. Pendências externas: repo PIXEL, licença.
 - **Como retomar:** `docs/07_continuidade.md`.
 
@@ -209,6 +230,7 @@ Os achados que **pioraram a própria história** e por isso estão publicados:
 | `E8_sobrevivencia` | reprodução, limites analíticos, ablação, varredura, regime letal |
 | `E9_chave_residuo` | espaço de chave, bits, força bruta (`segundos` = não determinístico, declarado) |
 | `E10_orcamento` | E10: J pareado (2 regimes), RMSE de reconstrução, MI excedente, 3 condições, `veredito` |
+| `E10b_controles` | E10b: scores/perdas das 6 memórias (ID + OOD), Δ pareados com IC bootstrap, decodificação, `melhor_score` |
 | `demo_mensagem` | "Ganhei!" end-to-end |
 
 ---
@@ -231,9 +253,13 @@ against numerical evidence (`docs/06`, E7–E9, 18 verdicts, tests → 27); cycl
 green on Windows + Linux; cycle 5 organised the docs (index, continuity, this
 report) and ran a consistency audit; cycle 6 (`docs/09`) verified the external
 audit "MUTARIC ev" claim by claim — five corrections adopted, E10 built, real
-machine telemetry collected (tests → 30, figures → 9).
+machine telemetry collected (tests → 30, figures → 9); cycle 7 (`docs/10`)
+verified the second audit "MUTARIC ev 2" by **execution** — its `e10b.py` run
+here with **58/58 numbers reproduced** and ported as E10b, refutation of the
+strong claim published as a null result, comparator weakness written into
+`docs/09` §7.6, new queue items P1.10/P2.7 (tests → 32, figures → 10).
 
-**Studies (E1–E10 plus the σ curve):** provenance in relations (0.919 vs 1.000
+**Studies (E1–E10 + E10b plus the σ curve):** provenance in relations (0.919 vs 1.000
 baseline — the relational code does *not* win on accuracy, it wins on affine
 invariance); family by level vs polarity (polarity = copied label); payload
 capacity vs robustness (7.67 bits → 0.580 at σ=0.40 vs 2.58 bits → 0.927);
@@ -247,7 +273,11 @@ impossible; dynamic S\* **costs** 20.6 cycles while early recharging **gains**
 ≈0.3 s); and **E10**, the equal-budget comparison — 3/3 conditions hold (less
 content than conventional memory, +0.0165 bits of excess MI, paired J(AR) > J(AM)
 with t ≈ 12 and t ≈ 6) **but AR ≈ A0**: the residue beats conventional memory,
-not the absence of memory (published as a partial null result).
+not the absence of memory (published as a partial null result); and **E10b**,
+the strong-control replication — against magnitude EMA, short window and
+learned recurrent state at equal 24-bit budget the residue **loses** in both
+splits (CIs exclude zero, best agent = learned recurrent), so the strong
+formulation is refuted in that environment (published as a null result too).
 
 **Direction changes:** six external refusals (PIXEL repo not found, cipher,
 "Layer-3" validation, always-on telemetry, Walsh spreading, rewriting the data
@@ -259,7 +289,7 @@ loses to a trivial baseline" and two real bugs), mid-course redefinitions
 prominently as positive ones; no silent change to published numbers; I/O and
 telemetry outside the core; acceptance criteria for every item).
 
-**Now:** 30 tests, 10 documents, 9 figures, CI green; the queue is P1
+**Now:** 32 tests, 11 documents, 10 figures, CI green; the queue is P1
 (baselines + bootstrap CIs + perceptual transformations, plus the new P1.9
-hierarchical protocol) then P2 (the real TEOA core, plus P2.6). Resume with
+hierarchical protocol and P1.10 strong memory controls) then P2 (the real TEOA core, plus P2.6/P2.7). Resume with
 `docs/07_continuidade.md`.

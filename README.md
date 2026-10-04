@@ -11,9 +11,10 @@ renderizado como um **glifo 48×32** e é lido de volta por um leitor relacional
 tentam recuperar **família afetiva, procedência e uma carga explícita de 5,36 bits**.
 
 > **Status: protótipo exploratório.** Os seis experimentos principais (E1–E6),
-> os três de verificação externa (E7–E9, do documento MutaCore) e o **E10**
-> (paridade de orçamento, da auditoria MUTARIC ev) rodam, são determinísticos e
-> têm **30 testes** — mas os números do E1–E4 vêm de um mundo
+> os três de verificação externa (E7–E9, do documento MutaCore), o **E10**
+> (paridade de orçamento, da auditoria MUTARIC ev) e o **E10b** (controles
+> fortes de memória, da auditoria MUTARIC ev 2) rodam, são determinísticos e
+> têm **32 testes** — mas os números do E1–E4 vêm de um mundo
 > **roteirizado** (`mundo.py` escreve as procedências à mão) e de um leitor que
 > **relê o que foi gravado literalmente**. Leia `docs/02_analise_achados.md` antes de
 > citar qualquer número; ele lista o que os resultados **não** sustentam.
@@ -38,18 +39,21 @@ tentam recuperar **família afetiva, procedência e uma carga explícita de 5,36
    feitos e todas as mudanças de direção.
 9. `docs/09_analise_mutaric_ev.md` — auditoria externa **MUTARIC ev**: 5 correções
    adotadas, o **E10** (orçamento igual) e a coleta **real** desta máquina.
+10. `docs/10_analise_mutaric_ev2.md` — segunda auditoria **MUTARIC ev 2**:
+    o `e10b.py` deles executado aqui (**58/58 números reproduzidos**) e o
+    **E10b** — o resíduo **não vence** memórias fortes de igual orçamento.
 
 ## Rodar
 
 ```bash
 pip install -r requirements.txt
-python run_all.py --so-testes    # 30 testes de sanidade (segundos)
-python run_all.py                # testes + E1-E10 + figuras (alguns minutos)
+python run_all.py --so-testes    # 32 testes de sanidade (segundos)
+python run_all.py                # testes + E1-E10 + E10b + figuras (alguns minutos)
 python -m ricemotions.experimentos --telemetria   # coleta REAL da máquina (opcional,
                                                   # requer psutil; não regressada)
 ```
 
-Saídas: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore,e10_orcamento}.png`
+Saídas: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore,e10_orcamento,e10b_controles}.png`
 e `resultados/resultados.json`; a coleta opcional grava `resultados/maquina.json` e
 `resultados/telemetria_real.json` (não determinísticos). No Windows `python` (não `python3`).
 
@@ -64,9 +68,9 @@ ricemotions/                pacote importável
   residuo.py                E5: geração, roteamento (banda/simetria), Landauer, τ
   agente.py                 E6: transição + mão dupla (S*, w, τ realimentados)
   homeostase.py             MutaCore: resíduo endógeno, S*/τ por telemetria, política
-  experimentos.py           E1-E10, figuras, único lugar com I/O
-tests/test_smoke.py         sanidade + regressão dos números publicados
-docs/                       10 documentos (índice, arquitetura, análise, ponte, plano, resíduo/agência, MutaCore, continuidade, histórico, auditoria MUTARIC ev)
+  experimentos.py           E1-E10, E10b, figuras, único lugar com I/O
+tests/test_smoke.py         sanidade + regressão dos números publicados (32)
+docs/                       11 documentos (índice, arquitetura, análise, ponte, plano, resíduo/agência, MutaCore, continuidade, histórico, auditorias MUTARIC ev e ev 2)
 figs/                       figuras geradas
 resultados/                 resultados.json (regenerável) + maquina.json e
                             telemetria_real.json (coleta real, não regressada)
@@ -180,6 +184,33 @@ sementes e ruído):
 `resultados/telemetria_real.json`, com a carga real alimentando o E10 no lugar do
 resíduo sintético — fora da regressão por ser não determinística.
 
+## Auditoria externa MUTARIC ev 2 (04/10/2026 — `docs/10`)
+
+Terceira verificação externa, mesma regra — e desta vez com o **código deles
+executado aqui**: o `e10b.py` anexado rodou nesta máquina (**58/58 números
+publicados reproduzidos com diferença 0**) e foi portado como **E10b**,
+determinístico e regredido (`E10b_controles`, 2 testes novos).
+
+O E10b responde *o que acontece contra memórias **fortes** de igual orçamento
+(24 bits)* — EMA de magnitude, janela curta e estado recorrente aprendido,
+com IC bootstrap pareado, 200 sementes e teste OOD:
+
+| comparação (Δ = resíduo − controle) | ID | OOD |
+|---|---|---|
+| vs EMA de magnitude | −0,0001272 (desfavorável) | −0,0000237 (desfavorável) |
+| vs janela curta | +0,0000370 (favorável) | −0,0001596 (desfavorável) |
+| vs recorrente aprendido | −0,0001904 (desfavorável) | −0,0003150 (desfavorável) |
+
+**Veredito publicado (nulo, com a mesma proeminência dos positivos):** no
+ambiente do E10b a formulação forte *resíduo > memória convencional de igual
+capacidade* **não se sustenta** — o melhor agente é o recorrente aprendido,
+e nenhuma memória recupera o sinal apagado (decodificador ≈ acaso, 0,4985–0,5018).
+Isso é coerente com a ressalva `AR ≈ A0` do nosso E10 e virou **limitação
+escrita** (`docs/09` §7.6) + duas pendências: **P1.10** (controles fortes no
+nosso ambiente do E10) e **P2.7** (E10c, resíduo preditivo com não
+reconstrução). A parte 1 do documento (`e10.py`, testes deles) **não foi
+fornecida** e fica declarada como não verificável.
+
 ## Quatro limites que não se deve esquecer
 
 1. **Roteiro, não emergência** — as procedências são cenários escritos à mão
@@ -203,9 +234,11 @@ resíduo sintético — fora da regressão por ser não determinística.
 leitor soft, curva × σ e CI verde). A fila agora é **P1** — ICs e teste de hipótese
 para E1–E4, baseline séria (logística/MLP), transformações perceptivas reais, faixa
 de neutro, **P1.7** (carga como canal: espalhamento + decodificador, a única ideia
-do MutaCore que ficou como trabalho futuro) e **P1.9** (protocolo hierárquico —
-correção da auditoria). Depois **P2.1**, trocar `mundo.episode()` por
-`teoa/core.py` de verdade, e **P2.6** (agente sem evento externo sintético).
+do MutaCore que ficou como trabalho futuro), **P1.9** (protocolo hierárquico —
+correção da auditoria) e **P1.10** (controles fortes de memória no ambiente do
+E10 — correção da auditoria ev 2). Depois **P2.1**, trocar `mundo.episode()` por
+`teoa/core.py` de verdade, **P2.6** (agente sem evento externo sintético) e
+**P2.7** (E10c: resíduo preditivo com não reconstrução).
 Como retomar: `docs/07`.
 
 ---
@@ -223,8 +256,9 @@ by a relational reader that decodes **affective family, provenance and an explic
 5.36-bit payload**.
 
 **Status: exploratory prototype.** Six experiments (E1–E6), three external
-verification runs (E7–E9, from the MutaCore document) and **E10** (equal budget,
-from the MUTARIC ev audit) run deterministically and are covered by **30 tests**,
+verification runs (E7–E9, from the MutaCore document), **E10** (equal budget,
+from the MUTARIC ev audit) and **E10b** (strong memory controls, from the
+MUTARIC ev 2 audit) run deterministically and are covered by **32 tests**,
 but the world is **hand-scripted** and the reader **re-reads what the writer
 stored literally**. Read `docs/02_analise_achados.md`
 before quoting any number: it lists what the results do **not** support.
@@ -281,6 +315,24 @@ t ≈ 6) — **but AR ≈ A0**: the residue beats conventional memory, not the a
 of memory (a partial null result, published as prominently as the positive ones).
 Real telemetry from this machine drives the E10 residue channel in place of the
 synthetic input, in non-regressed files.
+
+**New in this cycle (`docs/10`):** the third external audit ("MUTARIC ev 2")
+was verified by **execution** — its `e10b.py` was run here and **58/58
+published numbers reproduce exactly**; the code was ported as **E10b**
+(seeded, deterministic, regressed by 2 new tests). E10b compares the quadratic
+residue against *strong* memories of equal 24-bit budget (magnitude EMA, short
+window, learned recurrent state) with paired bootstrap CIs, 200 seeds and an
+OOD split: **the strong claim is refuted in that environment** — the residue
+loses to magnitude EMA (ID −0.0001272, OOD −0.0000237) and to the learned
+recurrent model (ID −0.0001904, OOD −0.0003150; all CIs exclude zero), wins
+only against the short window in-distribution, and the best agent is the
+learned recurrent state; no memory recovers the erased signal above chance.
+This null result is published as prominently as the positive ones, written up
+as a limitation of our own E10 comparator (`docs/09` §7.6), and turned into
+two queue items: **P1.10** (strong controls + OOD + bootstrap CI inside *our*
+E10 environment) and **P2.7** (E10c, predictive compressed residue under a
+non-reconstruction constraint). The document's first part (`e10.py` and their
+test files) was not provided and is declared **unverifiable**.
 
 Full English documentation: [`README.en.md`](README.en.md). Architecture, findings,
 TEOA↔PIXEL mapping and roadmap in `docs/` (Portuguese).

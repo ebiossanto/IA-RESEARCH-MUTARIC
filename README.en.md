@@ -20,9 +20,10 @@ episode (6 channels × 32 steps)      TEOA side: state, distance to target s*
 ```
 
 **Status: exploratory prototype.** The six experiments (E1–E6), three external
-verification runs (E7–E9, from the attached MutaCore document) and **E10** (equal
-budget, from the MUTARIC ev audit) run deterministically
-and are covered by **30 smoke tests**, but the affective world is **hand-scripted**
+verification runs (E7–E9, from the attached MutaCore document), **E10** (equal
+budget, from the MUTARIC ev audit) and **E10b** (strong memory controls, from
+the MUTARIC ev 2 audit) run deterministically
+and are covered by **32 smoke tests**, but the affective world is **hand-scripted**
 (`mundo.py` writes the provenances as scenarios) and the reader **re-reads what the
 writer stored literally**. Read `docs/02_analise_achados.md` before quoting any
 number — it lists what the results do **not** support.
@@ -33,16 +34,16 @@ number — it lists what the results do **not** support.
 README.md / README.en.md     this file / Portuguese version
 requirements.txt .gitignore  numpy, scipy, matplotlib
 run_all.py                   entry point: tests + experiments
-.github/workflows/ci.yml     CI: 30 tests on Windows + Linux
+.github/workflows/ci.yml     CI: 32 tests on Windows + Linux
 ricemotions/
   mundo.py                   TEOA side: episodes, valence, labels   (no I/O)
   glifo.py                   PIXEL/RIC side: write, read, graphs     (no I/O)
   residuo.py                 E5: residue generation/routing, Landauer, τ
   agente.py                  E6: transition + two-way loop (S*, w, τ fed back)
   homeostase.py              MutaCore: endogenous residue, telemetry → S*/τ, policy
-  experimentos.py            E1–E10, figures, the only module with I/O
-tests/test_smoke.py          contracts + regression of published numbers
-docs/                        10 documents: index · architecture · findings · bridge · roadmap · residue/agency · MutaCore · continuity · history · MUTARIC ev audit
+  experimentos.py            E1–E10 + E10b, figures, the only module with I/O
+tests/test_smoke.py          contracts + regression of published numbers (32)
+docs/                        11 documents: index · architecture · findings · bridge · roadmap · residue/agency · MutaCore · continuity · history · MUTARIC ev and ev 2 audits
 figs/  resultados/           generated figures and resultados/resultados.json
                              (+ maquina.json and telemetria_real.json: real machine
                              collection, non-deterministic, never regressed)
@@ -52,13 +53,13 @@ figs/  resultados/           generated figures and resultados/resultados.json
 
 ```bash
 pip install -r requirements.txt
-python run_all.py --so-testes    # 30 sanity tests (seconds)
-python run_all.py                # tests + E1–E10 + figures (a few minutes)
+python run_all.py --so-testes    # 32 sanity tests (seconds)
+python run_all.py                # tests + E1–E10 + E10b + figures (a few minutes)
 python -m ricemotions.experimentos --telemetria   # real machine collection (optional,
                                                   # needs psutil; not regressed)
 ```
 
-Outputs: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore,e10_orcamento}.png`
+Outputs: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore,e10_orcamento,e10b_controles}.png`
 and `resultados/resultados.json`; the optional collection writes
 `resultados/maquina.json` and `resultados/telemetria_real.json` (non-deterministic).
 
@@ -152,6 +153,34 @@ machine (CPU 18.5–60.0 %, RAM ≈ 81 %) is collected into
 residue channel in place of the synthetic input, outside the regression because
 it is non-deterministic.
 
+## Third external audit — "MUTARIC ev 2" (`docs/10`, in Portuguese)
+
+Same rule, applied this time to **their code**: the attached `e10b.py` was
+**executed on this machine** and **58/58 published numbers reproduce exactly**
+(difference 0), then ported as **E10b** — seeded, deterministic, regressed by
+2 new tests (`E10b_controles`).
+
+E10b asks what happens against **strong** memories of equal 24-bit budget
+(magnitude EMA, short window, learned recurrent state), with paired bootstrap
+CIs, 200 seeds and an OOD split:
+
+| comparison (Δ = residue − control) | ID | OOD |
+|---|---|---|
+| vs magnitude EMA | −0.0001272 (unfavorable) | −0.0000237 (unfavorable) |
+| vs short window | +0.0000370 (favorable) | −0.0001596 (unfavorable) |
+| vs learned recurrent | −0.0001904 (unfavorable) | −0.0003150 (unfavorable) |
+
+**Published verdict (null, with the same prominence as the positive ones):** in
+that environment the strong claim *residue > conventional memory of equal
+capacity* **does not hold** — the best agent is the learned recurrent state,
+and no memory recovers the erased signal (decoder ≈ chance, 0.4985–0.5018).
+This is consistent with our own E10 caveat (residue ≈ no-memory) and became a
+**written limitation** of our comparator (`docs/09` §7.6) plus two queue
+items: **P1.10** (strong controls inside *our* E10 environment) and **P2.7**
+(E10c, predictive compressed residue under a non-reconstruction constraint).
+The document's first part (`e10.py`, their test files) was **not provided**
+and is declared unverifiable.
+
 ## Key findings (details in `docs/02_analise_achados.md`)
 
 1. **The relational code does not beat trivial baselines.** `level+delta` reaches
@@ -217,12 +246,14 @@ not a programming problem. Full argument in `docs/05` §8.
 See `docs/04_plano_desenvolvimento.md` (P0–P3, each with acceptance criteria).
 **P0.1–P0.5 are done** (isomorphism-aware payload, robust soft decoding,
 accuracy-vs-σ curve, clean `run_all.py`, CI on Windows + Linux), and the
-MUTARIC ev audit is closed (`docs/09`); **P1** remains: real
+MUTARIC ev and ev 2 audits are closed (`docs/09`, `docs/10`); **P1** remains: real
 baselines, bootstrap hypothesis tests, perceptual transformations, a neutral band,
 **P1.7** (payload as a channel: spreading + decoder — the only MutaCore idea
-left as future work) and **P1.9** (hierarchical protocol). Then **P2**: wire the
-actual TEOA core, a two-agent communication loop and **P2.6** (agent without
-synthetic external events). How to resume: `docs/07_continuidade.md`.
+left as future work), **P1.9** (hierarchical protocol) and **P1.10** (strong
+memory controls inside our E10 environment). Then **P2**: wire the
+actual TEOA core, a two-agent communication loop, **P2.6** (agent without
+synthetic external events) and **P2.7** (E10c, predictive residue with
+non-reconstruction). How to resume: `docs/07_continuidade.md`.
 
 ## Relation to the TEOA project
 

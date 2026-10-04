@@ -426,6 +426,72 @@ def test_maquina_e_telemetria_fora_da_regressao():
     assert t["condicoes"]["c_ar_maior_nos_dois_regimes"] is True
 
 
+def test_e10b_reproduz_o_documento_mutaric_ev2():
+    """E10b (auditoria MUTARIC ev 2 — docs/10): o port regera as tabelas publicadas
+    no documento externo. Veredito publicado: o resíduo quadrático NÃO vence as
+    memórias fortes de igual orçamento (24 bits) — formulação forte refutada."""
+    from ricemotions import experimentos as E
+    r = E.e10b_controles()
+    assert r["protocolo"]["bits_mutaveis"] == 24 == E.E10B_BUDGET
+    assert r["protocolo"]["sementes_pareadas"] == 200
+    # tabelas publicadas (docs/10 §3): scores e perdas, ID e OOD
+    assert abs(r["id"]["none"]["score_medio"] + 0.004586) < 1e-5
+    assert abs(r["id"]["none"]["loss_medio"] - 0.004265) < 1e-5
+    assert abs(r["id"]["square_ema"]["score_medio"] + 0.003668) < 1e-5
+    assert abs(r["id"]["square_ema"]["loss_medio"] - 0.002828) < 1e-5
+    assert abs(r["id"]["magnitude_ema"]["score_medio"] + 0.003541) < 1e-5
+    assert abs(r["id"]["learned_recurrent"]["score_medio"] + 0.003478) < 1e-5
+    assert abs(r["ood"]["none"]["score_medio"] + 0.007148) < 1e-5
+    assert abs(r["ood"]["square_ema"]["loss_medio"] - 0.004809) < 1e-5
+    assert abs(r["ood"]["learned_recurrent"]["score_medio"] + 0.005172) < 1e-5
+    # comparações pareadas (Δ = resíduo − controle) com IC95% bootstrap
+    ci = r["id"]["comparacoes_square_ema"]
+    assert abs(ci["magnitude_ema"]["delta"] + 0.0001272) < 1e-6
+    assert abs(ci["magnitude_ema"]["ic95"][1] + 0.0001171) < 1e-6
+    assert ci["magnitude_ema"]["conclusao"] == "desfavoravel"
+    assert abs(ci["short_window"]["delta"] - 0.0000370) < 1e-6
+    assert ci["short_window"]["conclusao"] == "favoravel"
+    assert ci["short_window"]["vitorias"] > 0.65            # só vence a janela ID
+    assert abs(ci["learned_recurrent"]["delta"] + 0.0001904) < 1e-6
+    assert ci["learned_recurrent"]["conclusao"] == "desfavoravel"
+    co = r["ood"]["comparacoes_square_ema"]
+    assert abs(co["magnitude_ema"]["delta"] + 0.0000237) < 1e-6
+    assert abs(co["short_window"]["delta"] + 0.0001596) < 1e-6
+    assert abs(co["learned_recurrent"]["delta"] + 0.0003150) < 1e-6
+    assert all(v["conclusao"] == "desfavoravel" for v in co.values())
+    # melhor agente: recorrente aprendido nos dois splits
+    assert r["id"]["melhor_score"] == r["ood"]["melhor_score"] == "learned_recurrent"
+    # nenhuma memória reconstrói o sinal: decodificador ~ acaso nos 2 splits
+    for k in ("magnitude_ema", "square_ema", "short_window", "learned_recurrent"):
+        for s in ("id", "ood"):
+            assert 0.49 <= r[s][k]["vazamento_sinal"] <= 0.51, (s, k)
+
+
+def test_e10b_orcamento_determinismo_e_separacao():
+    """E10b: orçamento real de 24 bits no agente de janela, mesmo resultado por
+    semente em duas execuções, e sementes de treino e avaliação disjuntas."""
+    from ricemotions import experimentos as E
+    # o agente de janela curta coube exatamente em 24 bits (2 amostras × 2 bits × 6)
+    st = E._e10b_Store("short_window", E.E10B_CFG)
+    for i in range(7):
+        st.update(np.full(E.E10B_N, 0.05 + 0.01 * i))
+        assert 0 <= st.packed < 2 ** E.E10B_BUDGET
+        assert st.salience().shape == (E.E10B_N,)
+    # quantizador Q4: grade exata de 1/15
+    g = E._e10b_q(np.linspace(0, 1, 37))
+    assert np.allclose(g * 15, np.rint(g * 15), atol=1e-12)
+    # determinismo: duas execuções com a mesma configuração são idênticas
+    a = E.e10b_controles(n_seeds=4, train_sequences=10)
+    b = E.e10b_controles(n_seeds=4, train_sequences=10)
+    assert a == b
+    # protocolo: treino (100000+) nunca encontra avaliação (50000+)
+    t = a["protocolo"]["treino_recorrente"]
+    lo, hi = t.split(";")[0].split()[-1].split("..")
+    treino = set(range(int(lo), int(hi) + 1))
+    assert treino.isdisjoint(range(50000, 50000 + a["protocolo"]["sementes_pareadas"]))
+    assert a["protocolo"]["bits_mutaveis"] == 24
+
+
 TESTES = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
 
 

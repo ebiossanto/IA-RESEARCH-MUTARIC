@@ -11,7 +11,9 @@ Sementes fixas: treino 1, validação 2, teste 3; τ escolhido **na validação*
 > estão em `docs/05_residuo_e_agencia.md`; a verificação externa do documento
 > MutaCore (E7–E9) está em `docs/06_analise_mutacore.md`; a auditoria externa
 > MUTARIC ev e o **E10** (paridade de orçamento) estão em
-> `docs/09_analise_mutaric_ev.md`. Os achados A2, A3 e A5
+> `docs/09_analise_mutaric_ev.md`; e a segunda auditoria, **MUTARIC ev 2**, com o
+> **E10b** (controles fortes de memória — o resíduo não vence), está em
+> `docs/10_analise_mutaric_ev2.md`. Os achados A2, A3 e A5
 > ganharam notas de status apontando para lá.
 
 ---

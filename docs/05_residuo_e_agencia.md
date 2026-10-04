@@ -16,7 +16,9 @@ Todos os números aqui vêm de `resultados/resultados.json` (chaves `curva_sigma
 A análise do documento externo **MutaCore/RIC** — que propõe o mesmo filtro de
 Landauer, uma homeostase de hardware e um benchmark de sobrevivência — está em
 `docs/06_analise_mutacore.md` (E7–E9). A auditoria externa seguinte, **MUTARIC ev**,
-está em `docs/09_analise_mutaric_ev.md` (E10, testes 30/30).
+está em `docs/09_analise_mutaric_ev.md` (E10); a segunda, **MUTARIC ev 2**, em
+`docs/10_analise_mutaric_ev2.md` (E10b — contra memórias fortes de igual
+orçamento o resíduo não vence). Testes: 32/32.
 
 ---
 
@@ -401,8 +403,8 @@ entre as causas da próxima transição — e há um número que prova a diferen
 | P0.2 `codebook_up_to_isomorphism` no E3 | **feito** — `carga_isomorfismo`, 0,208 → 1,000 | §5, `resultados.json` |
 | P0.3 decodificação soft | **feito** — `body_cont` + correção + pesos | §2 |
 | P0.4 curva acurácia × σ | **feito** — 7 valores de σ | §2.2, `figs/curva_sigma.png` |
-| P0.1 `run_all.py` limpo | **feito** — hoje 30/30 testes | `tests/test_smoke.py` |
-| P0.5 CI (GitHub Actions) | **feito** — `.github/workflows/ci.yml`, 30/30 em Windows e Linux | `docs/04`, badge no README |
+| P0.1 `run_all.py` limpo | **feito** — hoje 32/32 testes | `tests/test_smoke.py` |
+| P0.5 CI (GitHub Actions) | **feito** — `.github/workflows/ci.yml`, 32/32 em Windows e Linux | `docs/04`, badge no README |
 | P1.7 carga espalhada + decodificador | **origem**: ideia recusada do MutaCore (não verificável lá) | `docs/06` §8.5/§9, `docs/04` P1.7 |
 | P2.2 "Agente" | **parcial** — existe `agente.py` com política e transição, mas ainda sem custo/recompensa nem `teoa.core` | §6 |
 | L2 (sem agente) | **parcialmente fechada** | `docs/03` |

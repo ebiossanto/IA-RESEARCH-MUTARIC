@@ -36,8 +36,8 @@ glifo.patches()          16×32 (média dos 3 pixels de cada patch)
 | `ricemotions/residuo.py` | E5: gerar/rotear resíduo (banda, simetria), energia Landauer, τ efetivo | numpy, `mundo` |
 | `ricemotions/agente.py` | E6: transição com acoplamento `J`, `modular()` (mão dupla), critério | numpy, `mundo`, `glifo`, `residuo` |
 | `ricemotions/homeostase.py` | MutaCore (§B–§E): resíduo **endógeno** `ΔH_L→R_L→Φ`, telemetria→`S*`/`τ`, política, robô do benchmark | numpy, `mundo` |
-| `ricemotions/experimentos.py` | E1–E10, figuras, I/O de disco | os acima, matplotlib, json |
-| `tests/test_smoke.py` | Sanidade dos contratos + regressões dos números publicados (30 testes) | o pacote |
+| `ricemotions/experimentos.py` | E1–E10, E10b, figuras, I/O de disco | os acima, matplotlib, json |
+| `tests/test_smoke.py` | Sanidade dos contratos + regressões dos números publicados (32 testes) | o pacote |
 | `run_all.py` | Ponto de entrada único | subprocess |
 
 **Regra de organização:** `mundo`, `glifo`, `residuo`, `agente` e `homeostase` não
@@ -115,12 +115,15 @@ fixo) e da CARGA sempre por inteiro.
 | **E8** | o benchmark de sobrevivência mede emoção? (reprodução fiel + ablação 2×2×2 + varredura) | `E8_sobrevivencia` (ciclos, limites analíticos, efeito do `S*`) |
 | **E9** | a cifra cuja chave é o resíduo tem quantos bits? | `E9_chave_residuo` (espaço de chave, força bruta) |
 | **E10** | com o MESMO orçamento, o resíduo supera memória convencional? (4 agentes: sem memória / ruído / conteúdo / resíduo) | `E10_orcamento` (J pareado, reconstrução do conteúdo, MI excedente) |
+| **E10b** | e contra memórias **fortes** de igual orçamento (24 bits)? (EMA assinada, magnitude, janela, recorrente aprendido; ID + OOD) | `E10b_controles` (scores, Δ pareados com IC bootstrap, decodificação) |
 
 A linha **curva σ** é um experimento à parte **sem número "E"** (é o item P0.4 do
-plano, feito junto com o leitor robusto). Ou seja: são E1–E10 **mais** a curva × σ.
+plano, feito junto com o leitor robusto). Ou seja: são E1–E10, E10b **mais** a
+curva × σ.
 
 Análise, vereditos e provas de E7–E9: `docs/06_analise_mutacore.md`.
 Do E10 e da auditoria MUTARIC ev (5 correções + coleta real da máquina): `docs/09_analise_mutaric_ev.md`.
+Do E10b e da auditoria MUTARIC ev 2 (58/58 números reproduzidos, formulação forte refutada): `docs/10_analise_mutaric_ev2.md`.
 
 Boas práticas **já** seguidas aqui (manter):
 
@@ -138,7 +141,7 @@ python -m ricemotions.experimentos
 python tests/test_smoke.py
 ```
 
-- Saídas: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore,e10_orcamento}.png`
+- Saídas: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore,e10_orcamento,e10b_controles}.png`
   e `resultados/resultados.json`.
 - Coleta **real** da máquina (não determinística, fora do `run_all` e da CI;
   requer `psutil`): `python -m ricemotions.experimentos --telemetria` grava
@@ -160,7 +163,7 @@ python tests/test_smoke.py
 | `resultados.json` gravado junto das figuras | `resultados/resultados.json` |
 | consistência do mundo regenerava o conjunto de teste inteiro | usa os episódios já gerados (`build(...)` devolve `eps`) |
 | código morto em `figuras()` | removido |
-| nenhum teste | `tests/test_smoke.py` (**30 testes** hoje) |
+| nenhum teste | `tests/test_smoke.py` (**32 testes** hoje) |
 | E5 usava `Ite[:300]`, mas o conjunto de teste é **ordenado por classe** (só classe 0) | amostragem estratificada 50 × 6 (`e5_residuo`) |
 | `canon_order` só aceitava `(n, T)`, estourando no bloco `(n, R, T)` | aceita ambos e usa a média das 3 linhas redundantes |
 | o critério de mão dupla era contaminado pela relaxação dupla de `s` | snapshots do estado interno entre as duas chamadas (`criterio_mao_dupla`) |

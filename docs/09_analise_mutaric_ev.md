@@ -178,14 +178,26 @@ conforme a decisão `docs/06` §9 sobre manter o núcleo determinístico).
 5. **A carga real desta máquina (~0,55) ficou perto da normalização**, então a
    variante real validou o *canal* (hardware → experimento) mais do que gerou
    números distintos; máquinas com carga extrema produziriam outra coisa.
+6. **O comparador AM é fraco** (adotada da auditoria externa
+   "MUTARIC ev 2", `docs/10` §4): AM guarda a média do conteúdo, que não é a
+   estatística suficiente para distúrbios de magnitude. O E10b externo
+   demonstrou — com memórias fortes de igual orçamento (24 bits) — que o
+   resíduo perde para a EMA de magnitude e para o estado recorrente
+   aprendido, nos dois splits. A vitória `J(AR) > J(AM)` vale contra *este*
+   comparador; a ressalva `AR ≈ A0` (§5.2) já apontava no mesmo sentido.
+   Repetir o E10b **no nosso ambiente** é a pendência **P1.10**.
 
 ## 8. Pendências geradas por este ciclo
 
 - **P1.9** — protocolo hierárquico `mundo → semente → episódio` para as ICs
   (correção 4; `docs/04`).
 - **P2.6** — agente do E6 sem evento externo sintético (`docs/04`).
+- **P1.10** — controles fortes de memória (magnitude, janela, recorrente),
+  OOD e IC bootstrap pareado **dentro do E10** (auditoria `MUTARIC ev 2`,
+  `docs/10`; `docs/04`).
 - Próximo experimento natural: **E11** — E10 com política *aprendida* por
-  agente (hoje a política única é limitação declarada, §7.1).
+  agente (hoje a política única é limitação declarada, §7.1). O **E10c**
+  proposto pela auditoria ev 2 ficou como **P2.7** (`docs/04`).
 
 ---
 

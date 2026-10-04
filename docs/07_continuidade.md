@@ -14,13 +14,13 @@
 |---|---|
 | Repositório | **`github.com/ebiossanto/IA-RESEARCH-MUTARIC`** (**público** desde 04/10/2026), branch `main` |
 | Código | pacote `ricemotions/` — 6 módulos, nenhum com I/O fora de `experimentos.py` |
-| Experimentos | **E1–E10** (E1–E4 núcleo, E5 resíduo, E6 agência, E7–E9 verificação externa MutaCore, **E10** paridade de orçamento — auditoria MUTARIC ev) |
-| Testes | **30/30** (`python tests/test_smoke.py`), regressão dos números publicados |
+| Experimentos | **E1–E10 + E10b** (E1–E4 núcleo, E5 resíduo, E6 agência, E7–E9 verificação externa MutaCore, **E10** paridade de orçamento — auditoria MUTARIC ev, **E10b** controles fortes de memória — auditoria MUTARIC ev 2) |
+| Testes | **32/32** (`python tests/test_smoke.py`), regressão dos números publicados |
 | CI | GitHub Actions, matriz **Windows + Linux** (`.github/workflows/ci.yml`, P0.5) |
-| Figuras | 9 em `figs/` (geradas, determinísticas — o diff deve ser vazio ao regerar) |
+| Figuras | 10 em `figs/` (geradas, determinísticas — o diff deve ser vazio ao regerar) |
 | Resultados | `resultados/resultados.json` — fonte única de todos os números citados |
 | Coleta real | `resultados/maquina.json` + `resultados/telemetria_real.json` — informação desta máquina, **não regressada** (`--telemetria`, `docs/09` §6) |
-| Documentos | `docs/00` a `docs/09` (índice, arquitetura, achados, ponte, plano, resíduo/agência, MutaCore, continuidade, histórico, **auditoria MUTARIC ev**) |
+| Documentos | `docs/00` a `docs/10` (índice, arquitetura, achados, ponte, plano, resíduo/agência, MutaCore, continuidade, histórico, **auditoria MUTARIC ev**, **auditoria MUTARIC ev 2**) |
 | Estado do texto | **protótipo exploratório**: números descritivos, sem IC nem teste de hipótese |
 
 ## 2. Retomar em 10 minutos
@@ -30,13 +30,13 @@ git clone https://github.com/ebiossanto/IA-RESEARCH-MUTARIC.git
 cd IA-RESEARCH-MUTARIC
 pip install -r requirements.txt
 
-python run_all.py --so-testes    # 30 testes, segundos — faz isto PRIMEIRO
-python run_all.py                # testes + E1-E10 + figuras (alguns minutos)
+python run_all.py --so-testes    # 32 testes, segundos — faz isto PRIMEIRO
+python run_all.py                # testes + E1-E10 + E10b + figuras (alguns minutos)
 python -m ricemotions.experimentos --telemetria   # coleta REAL da máquina (opcional,
                                                   # requer psutil; grava arquivos próprios)
 ```
 
-Se os **30 testes** passam, o trabalho está exatamente como foi publicado.
+Se os **32 testes** passam, o trabalho está exatamente como foi publicado.
 Se algum falhar, **não edite o teste para fazer passar**: a falha diz qual número
 publicado mudou — leia `docs/02` e `docs/06` antes de decidir qualquer coisa.
 
@@ -93,6 +93,14 @@ por item. A ordem recomendada para retomar:
 > As correções 4 e 5 viraram dois itens novos na fila: **P1.9** (protocolo
 > hierárquico contra pseudorreplicação) e **P2.6** (agente sem evento externo
 > sintético). A fila de prioridade continua P1.1 → P1.2 → P1.3.
+>
+> A **segunda auditoria (MUTARIC ev 2)** também foi analisada com provas
+> (`docs/10`): o `e10b.py` deles executado aqui com **58/58 números
+> reproduzidos** e portado como **E10b** — veredito publicado: *contra
+> memórias fortes de igual orçamento (24 bits) o resíduo não vence* (melhor
+> agente: recorrente aprendido; ICs fora de zero nos dois splits). Daí saíram
+> **P1.10** (controles fortes + OOD + IC bootstrap no nosso ambiente do E10)
+> e **P2.7** (E10c, resíduo preditivo com não reconstrução).
 
 ## 5. Pendências que vivem fora deste repositório
 
@@ -102,6 +110,7 @@ por item. A ordem recomendada para retomar:
 | `teoa/core.py` de verdade | `Desktop/Emoções/` | P2.1: adaptador `estado → (6,32)` e repetir E1–E4 |
 | Documento `MUTACORE _ RIC.md` | fora do repo (anexo do usuário) | já analisado integralmente em `docs/06`; só reabrir se houver código novo anexado |
 | Documento `MUTARIC ev.md` | fora do repo (anexo do usuário) | já analisado integralmente em `docs/09` (5 correções + E10 + coleta); só reabrir se houver nova versão |
+| Documento `MUTARIC ev 2.md` + `e10b.py` | fora do repo (pasta `mutaric b/MUTARIC_E10b/` no Desktop) | já analisado e reproduzido em `docs/10` (E10b portado, 58/58); só reabrir se chegar o `e10.py`/os testes deles, que ficaram **não verificáveis** |
 | Licença do repositório | não definida | decidir antes de tornar público |
 
 ## 6. Checklist para adicionar um experimento (E11) sem quebrar nada
@@ -139,12 +148,16 @@ por item. A ordem recomendada para retomar:
 
 This document is the **hand-off**: where the work stopped (04/10/2026), how to
 resume in 10 minutes (`pip install -r requirements.txt` → `python run_all.py
---so-testes` → 30/30), and what is already decided and must not be reopened
+--so-testes` → 32/32), and what is already decided and must not be reopened
 without numerical reproduction. Repository:
 `github.com/ebiossanto/IA-RESEARCH-MUTARIC` (public, branch `main`), CI on
-Windows + Linux. Experiments are now **E1–E10**; the external audit "MUTARIC ev"
-was verified claim by claim in `docs/09` (five corrections adopted, E10 built,
-real telemetry from this machine collected into non-regressed files). The next
+Windows + Linux. Experiments are now **E1–E10 + E10b**; the external audit
+"MUTARIC ev" was verified claim by claim in `docs/09` (five corrections
+adopted, E10 built, real telemetry from this machine collected into
+non-regressed files), and the second audit "MUTARIC ev 2" in `docs/10`
+(its `e10b.py` run here with 58/58 numbers reproduced and ported as E10b:
+**the residue does not beat strong memories of equal budget** — refutation
+published with the same prominence). The next
 concrete step is still **P1.1** (serious baselines with bootstrap CIs), then
 P1.2 (paired hypothesis test) and P1.3 (perceptual transformations); P0.1–P0.5
 are closed. External pendencies live outside this repo: the PIXEL repository
