@@ -16,6 +16,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ricemotions import glifo as G  # noqa: E402
 from ricemotions import mundo as M  # noqa: E402
+from ricemotions import residuo as R  # noqa: E402
+from ricemotions import agente as A  # noqa: E402
 
 
 # ---------------- mundo ----------------
@@ -144,6 +146,118 @@ def test_permutacao_tem_ancoras():
     assert not np.allclose(ref[10:16], got[10:16])  # carga permutada
 
 
+# ---------------- resíduo: roteamento (docs/05, E5) ----------------
+def _glifo_exemplo(k=0, seed=1):
+    e = M.episode(*M.CLASSES[k], np.random.default_rng(seed))
+    v, a = M.affect(e)
+    img = G.render(e, v, a, M.CLASSES[k][0], (0, 0, 1, 1, 2, 2), np.random.default_rng(seed + 1))
+    return e, v, a, img
+
+
+def test_banda_residuo():
+    """roteamento B: a banda RESÍDUO existe, acrescenta 6 linhas e é lida sem perda."""
+    e, v, a, img = _glifo_exemplo()
+    r = R.gerar(rng=np.random.default_rng(13))
+    # mesmo rng do glifo original => mesmos carregadores de payload
+    ib = G.render(e, v, a, "alegria", (0, 0, 1, 1, 2, 2), np.random.default_rng(2),
+                  residuo=R.para_banda(r))
+    assert ib.shape == ((G.NROWS + 6) * G.R, G.T) == (66, 32)
+    assert np.array_equal(ib[:G.NROWS * G.R], img)       # as bandas originais não mudam
+    rec = R.recuperar_banda(ib)
+    assert rec.shape == r.shape
+    assert np.allclose(rec, r, atol=0.005)               # só o quantizador de 8 bits
+    assert np.corrcoef(R.memoria(r), R.memoria(rec))[0, 1] > 0.99
+
+
+def test_simetria_ida_e_volta():
+    """roteamento C: o resíduo vira permutação do corpo canônico.
+
+    p é recuperado EXATO sem protótipo nem rótulo, e o corpo canônico volta intacto —
+    é o que permite ler a classe com a mesma acurácia da condição B gastando 0 linhas.
+    """
+    _, _, _, img = _glifo_exemplo()
+    corpo_ref = G.patches(G.ler_corpo_canonico(img))[G.SL_CORPO]
+    for j in range(6):
+        r = R.gerar(rng=np.random.default_rng(200 + j))
+        p = np.asarray(R.para_permutacao(r))
+        ic = G.escrever_simetria(img, p)
+        assert ic.shape == img.shape                  # ZERO linhas extras
+        assert np.array_equal(G.simetria_ordem(ic), p)
+        assert np.allclose(G.patches(G.ler_corpo_canonico(ic))[G.SL_CORPO], corpo_ref, atol=1e-9)
+
+
+def test_energia_landauer():
+    """A energia descartada existe, é medida sem rótulo e cresce com o ruído."""
+    _, _, _, img = _glifo_exemplo()
+    e = R.energia_descartada(img, 0.7)
+    assert {"intra_patch", "quantizacao", "limiar", "total"} <= set(e)
+    assert e["total"] > 0
+    assert e["intra_patch"] < 1e-6                    # glifo limpo: as 3 linhas são iguais
+    sujo = G.t_noise(img, 0.1, np.random.default_rng(15))
+    assert R.energia_descartada(sujo, 0.7)["intra_patch"] > 1e-4
+
+
+def test_tau_do_ambiente():
+    """τ sobe com o resíduo (com teto) e τ alto => menos relações no glifo."""
+    assert R.tau_efetivo(0.7, 0.0) == 0.7
+    assert R.tau_efetivo(0.7, 0.5) > 0.7
+    assert R.tau_efetivo(0.7, 5.0) <= 0.95
+    _, _, _, img = _glifo_exemplo(k=2)
+    frac = [float(np.mean(G.body_graph(img, t))) for t in (0.5, 0.7, 0.9)]
+    assert frac[0] >= frac[1] >= frac[2]
+
+
+def test_leitor_robusto_vence_o_duro():
+    """σ̂ pela redundância R=3 + de-atenuação + pesos: sob ruído, muito acima do τ fixo."""
+    from ricemotions.experimentos import build, graphs
+    parts, _ = G.codebook(4)
+    Itr, ytr, _, _ = build(30, 1, parts)
+    Ite, yte, _, _ = build(10, 3, parts)
+    tau = 0.7
+    Aa, lab = G.alphabet(graphs(Itr, tau), ytr)
+    prot = G.body_prototypes(Itr, ytr, corrigir=True)
+    rng = np.random.default_rng(42)
+    In = np.array([G.t_noise(i, 0.15, rng) for i in Ite])
+    duro = G.balanced_acc(G.decode_body_alphabet(graphs(In, tau), Aa, lab), yte)
+    C = np.array([G.body_cont(i, True)[0] for i in In])
+    W = np.array([G.body_cont(i, True)[1] for i in In])
+    bom = G.balanced_acc(G.decode_body_cont(C, W, prot), yte)
+    assert abs(G.sigma2_pixels(In[0]) - 0.15 ** 2) < 0.006
+    assert bom > duro + 0.15, (duro, bom)
+
+
+# ---------------- agência (docs/05, E6) ----------------
+def test_agente_mao_dupla():
+    """Critério operacional: aberto dá 0 exato; fechado muda a próxima transição."""
+    X = np.full(M.NV, 0.5)
+    res = np.array([0.50, 0.10, 0.42, 0.06, 0.30, 0.22])
+    ab = A.Agente(M.S_STAR, fechado=False, seed=1)
+    fc = A.Agente(M.S_STAR, fechado=True, seed=1)
+    d_ab, _, _ = A.criterio_mao_dupla(X, ab, res)
+    d_fc, tau_alta, tau_nula = A.criterio_mao_dupla(X, fc, res)
+    assert d_ab == 0.0                                  # roteiro: regra não depende do estado
+    assert d_fc > 1e-4                                  # mão dupla: depende
+    assert tau_alta > tau_nula                          # e o limiar do ambiente também
+
+
+def test_agente_landauer_e_temporariedade():
+    """Landauer sobe tensão e o ALVO; sem leitura, o alvo volta ao normal."""
+    seq = [R.gerar(rng=np.random.default_rng(900 + t)) for t in range(20)]
+    on = A.Agente(M.S_STAR, landauer=True, seed=2)
+    off = A.Agente(M.S_STAR, landauer=False, seed=2)
+    Xo = np.full(M.NV, 0.5); Xf = Xo.copy()
+    for t in range(20):
+        Xo = off.passo(Xo, seq[t]); Xf = on.passo(Xf, seq[t])
+    assert Xf[1] > Xo[1] + 0.10
+    assert on.s[1] > off.s[1] + 0.05
+    dev = on.s[1] - M.S_STAR[1]
+    assert dev > 0.05
+    on.landauer = False                                # fase de repouso
+    for _ in range(60):
+        Xf = on.passo(Xf, np.zeros((M.NV, M.T)))
+    assert abs(on.s[1] - M.S_STAR[1]) < 0.05           # temporário: relaxa
+
+
 # ---------------- utilidades ----------------
 def test_lda_e_metricas():
     rng = np.random.default_rng(11)
@@ -170,9 +284,9 @@ def main():
         try:
             t()
             print(f"  PASSOU  {t.__name__}")
-        except AssertionError as exc:
+        except Exception as exc:                      # noqa: BLE001 - é o runner, não o teste
             falhas += 1
-            print(f"  FALHOU  {t.__name__}: {exc}")
+            print(f"  FALHOU  {t.__name__}: {type(exc).__name__}: {exc}")
     print(f"\n{len(TESTES) - falhas}/{len(TESTES)} testes passaram")
     return 1 if falhas else 0
 

@@ -55,8 +55,8 @@ no próprio `glifo.py` (docstring) — é uma mudança de projeto, não um detal
 | # | Lacuna | Consequência |
 |---|---|---|
 | L1 | `teoa/core.py` **não é usado**: `mundo.py` reimplementa um TEOA roteirizado de 6 canais, sem os regimes com histerese nem a valência ancorada | os experimentos testam o **código de leitura**, não a teoria |
-| L2 | **Não há agente**: nada é *escolhido*. Nenhuma ação, nenhum custo, nenhuma decisão | a emoção é um registro, não um estado que dirige comportamento |
-| L3 | **Não há feedback**: quem lê o glifo não muda (nem o mundo muda) | não há contágio, nem consequência da comunicação |
+| L2 | ~~Não há agente~~ → **parcial** (`docs/05` §6): existe `agente.py` com transição real, política de pesos e alvo `S*` que muda com o que foi lido. Falta: **custo/recompensa** e **valência vinda da dinâmica** (ainda sai de `affect()`) | a emoção deixou de ser só registro: o estado altera a **regra** (critério mede 0,00615 vs 0,00000). Continua sem *escolha de ação* |
+| L3 | ~~Não há feedback~~ → **parcial** (`docs/05` §3-§4): quem lê **a si mesmo** altera `S*`, `w` e `τ` do próprio próximo passo. Falta: um **segundo** agente lendo e mudando (contágio, consequência da comunicação) | há feedback de leitura sobre as regras, mas ainda não sobre *outro* agente |
 | L4 | **Sem memória entre glifos**: cada episódio é independente; o TEOA tem ciclos e histerese | não dá para estudar persistência/fadiga |
 | L5 | **Sem faixa de neutro**: `v > 0` é a fronteira (25/1800 erros, ver docs/02 A7) | família binária forçada perto de `v≈0` |
 | L6 | O leitor RIC **relê o que o escritor gravou literalmente** (linhas 4-9 = episódio `X`) | "a procedência está nas relações" é verdadeiro, mas é reconhecimento de roteiro (docs/02 A6) |
@@ -87,6 +87,9 @@ Correspondências a revisar:
    relacional, tal como está, não é necessária.)*
 2. **Q2** — o glifo sobrevive a um canal imperfeito de verdade (pixeis perdidos,
    JPEG, corte, escala)? *(hoje só há ruído gaussiano, brilho, blur e ganho/offset.)*
-3. **Q3** — um segundo agente, ao ler o glifo, muda de estado? *(L2/L3.)*
+3. **Q3** — um segundo agente, ao ler o glifo, muda de estado?
+   *(parcial: `docs/05` mostra que o agente muda **a si mesmo** ao ler — critério
+   0,00615 vs 0,00000. O segundo agente, o contágio e a consequência da comunicação
+   continuam abertos.)*
 4. **Q4** — o TEOA com valência **ancorada** produziria uma distribuição de glifos
    diferente da dos roteiros atuais? *(L1.)*

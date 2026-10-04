@@ -6,14 +6,20 @@ E1  Três alegrias (e três tristezas): a procedência se lê nas RELAÇÕES do 
 E2  Família afetiva: canal de NÍVEL (faixa de intensidade) vs canal RELACIONAL (par de linhas).
 E3  Carga explícita: capacidade x robustez (d_min), permutação de vértices, mensagem em vários glifos.
 E4  Pipeline completo (família por polaridade + procedência por relações) vs linhas de base.
+E5  Resíduo do ambiente: mesma energia, três destinos (espalhado | banda | simetria).
+E6  Agência: Landauer -> T/C -> tau -> pesos -> transição (mão dupla vs roteiro).
+    + curva acurácia x sigma do leitor robusto (correção de atenuação por redundância).
 """
 import json, os, sys
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from ricemotions.mundo import CLASSES, CAUSAS, FAMILIAS, make_set, affect, VARS
+from ricemotions.mundo import (CLASSES, CAUSAS, FAMILIAS, make_set, affect, VARS,
+                               S_STAR, NV, T as T_MUNDO)
 from ricemotions import glifo as G
+from ricemotions import residuo as R
+from ricemotions import agente as A
 
 # Windows grava em cp1252 por padrão e as chaves do JSON contêm "σ"; sem isto,
 # main() estoura UnicodeEncodeError logo após calcular tudo.
@@ -55,6 +61,277 @@ def masked_alphabet_pred(Gt, A, lab, fam_pred):
         d[FAM_OF[lab] != f] = 1e9
         out.append(lab[int(np.argmin(d))])
     return np.array(out)
+
+
+# ================= curva acurácia x sigma (leitor robusto) =================
+def curva_sigma(Itr, ytr, Ite, yte, tau):
+    """O mesmo ruído de pixel, quatro leitores.
+
+    ``duro``             limiar fixo em tau: o bit é sorteado quando o ruído passa do limiar.
+    ``cont``             aresta contínua + protótipo médio (sem correção).
+    ``cont_corrigido``   de-atenuação: c_true ≈ c_obs·sqrt(vo_i·vo_j/(s_i·s_j)).
+    ``cont_ponderado``   + peso = fração da variância que é sinal (σ̂ estimado pela
+                         redundância R=3 do próprio glifo — sem nenhum rótulo).
+    """
+    Aa, lab = G.alphabet(graphs(Itr, tau), ytr)
+    pc = G.body_prototypes(Itr, ytr, corrigir=True)
+    ps = G.body_prototypes(Itr, ytr, corrigir=False)
+    out = {}
+    for sg in [0.0, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40]:
+        rng = np.random.default_rng(4000 + int(round(sg * 100)))
+        In = np.array([G.t_noise(i, sg, rng) for i in Ite]) if sg > 0 else Ite
+        Cs = np.array([G.body_cont(i, False)[0] for i in In])
+        Cc = np.array([G.body_cont(i, True)[0] for i in In])
+        Wc = np.array([G.body_cont(i, True)[1] for i in In])
+        ones = np.ones_like(Cs)
+        out[f"{sg}"] = dict(
+            duro=G.balanced_acc(G.decode_body_alphabet(graphs(In, tau), Aa, lab), yte),
+            cont=G.balanced_acc(G.decode_body_cont(Cs, ones, ps), yte),
+            cont_corrigido=G.balanced_acc(G.decode_body_cont(Cc, ones, pc), yte),
+            cont_ponderado=G.balanced_acc(G.decode_body_cont(Cc, Wc, pc), yte),
+            sigma2_medio=float(np.mean([G.sigma2_pixels(i) for i in In[:60]])),
+        )
+    fig, ax = plt.subplots(1, 2, figsize=(11, 4))
+    xs = sorted(float(k) for k in out)
+    for ch, cor in [("duro", "tab:red"), ("cont", "tab:orange"),
+                    ("cont_corrigido", "tab:green"), ("cont_ponderado", "tab:blue")]:
+        ax[0].plot(xs, [out[f"{x}"][ch] for x in xs], "o-", color=cor, label=ch)
+    ax[0].set_title("ruído de pixel: leitor duro vs contínuo")
+    ax[0].axhline(1 / 6, ls=":", c="k")
+    ax[0].set_xlabel("σ do ruído"); ax[0].set_ylabel("acurácia balanceada (6 classes)")
+    ax[0].set_ylim(0, 1.02); ax[0].grid(alpha=.3); ax[0].legend(fontsize=8)
+    ganho = [out[f"{x}"]["cont_ponderado"] - out[f"{x}"]["duro"] for x in xs]
+    ax[1].bar([str(x) for x in xs], ganho, color="tab:blue")
+    ax[1].axhline(0, c="k", lw=1)
+    ax[1].set_title("ganho do leitor robusto sobre o leitor duro")
+    ax[1].set_xlabel("σ do ruído"); ax[1].set_ylabel("Δ acurácia")
+    ax[1].set_ylim(min(ganho) - 0.09, max(ganho) + 0.06)
+    ax[1].grid(alpha=.3, axis="y")
+    for i, g in enumerate(ganho):
+        # rótulo acima da barra; para barra negativa, acima do zero (evita os ticks)
+        ax[1].text(i, g + 0.012 if g >= 0 else 0.012, f"{g:+.2f}", ha="center", fontsize=8)
+    fig.tight_layout(); fig.savefig(os.path.join(FIG, "curva_sigma.png"), dpi=130); plt.close(fig)
+    return out
+
+
+# ================= E5: roteamento do resíduo =================
+def e5_residuo(Itr, ytr, Ite, yte, ste, Ete, parts, bits, tau, n=300):
+    """A MESMA energia de resíduo com três destinos.
+
+    ``A espalhado`` vira ruído de pixel (é o modelo das E1-E4) — destrói a leitura.
+    ``B banda``     linhas-de-patch 16-21 dedicadas — leitura intacta, custa 6 linhas.
+    ``C simetria``  vira uma permutação do corpo canônico — leitura intacta, custa
+                    ZERO linhas e carrega a ordem dos 6 canais (log2 720 = 9,49 bits).
+
+    Métricas: acurácia da classe (leitor cru e leitor canônico), da carga, e a
+    recuperação do próprio resíduo (ordinal exato + correlação por canal).
+    """
+    # amostra ESTRATIFICADA: o conjunto de teste é ordenado por classe, então um
+    # corte sequencial mediria uma classe só (50 x 6 = 300 glifos)
+    idx = np.concatenate([np.where(yte == k)[0][:max(1, n // 6)] for k in range(6)])
+    # leitor CRU (o das E1-E4) e leitor CANÔNICO (necessário para desfazer a simetria)
+    Aa_r, lab_r = G.alphabet(graphs(Itr, tau), ytr)
+    Itr_c = np.array([G.ler_corpo_canonico(i) for i in Itr])
+    Aa_c, lab_c = G.alphabet(graphs(Itr_c, tau), ytr)
+    prot_c = G.body_prototypes(Itr_c, ytr, corrigir=True)
+
+    acc = {k: {m: [] for m in ("classe_cru", "classe_canon", "classe_soft", "carga",
+                               "ordinal", "corr")} for k in ("A", "B", "C")}
+    linhas = {"A": 0, "B": 6, "C": 0}
+    sigmas = []
+    exemplos = {}
+    rng = np.random.default_rng(31)
+
+    for i in idx:
+        k, s = int(yte[i]), int(ste[i])
+        img = Ite[i]
+        r = R.gerar(rng=rng)
+        ord_true = R.ordinal_de_r(r)
+        v, a = affect(Ete[i])
+
+        noise, sg = R.para_pixels(r, seed=1000 + int(i)); sigmas.append(sg)
+        ia = img + noise                                              # A
+        ib = G.render(Ete[i], v, a, CLASSES[k][0], parts[s],
+                      np.random.default_rng(int(i)), residuo=R.para_banda(r))   # B
+        ic = G.escrever_simetria(img, R.para_permutacao(r))           # C
+
+        if i == idx[0]:
+            exemplos = {"A": ia, "B": ib, "C": ic}
+
+        for tag, im in (("A", ia), ("B", ib), ("C", ic)):
+            acc[tag]["classe_cru"].append(
+                G.decode_body_alphabet(graphs(im[None], tau), Aa_r, lab_r)[0] == k)
+            icn = G.ler_corpo_canonico(im)
+            acc[tag]["classe_canon"].append(
+                G.decode_body_alphabet(graphs(icn[None], tau), Aa_c, lab_c)[0] == k)
+            c_, w_ = G.body_cont(icn, True)
+            acc[tag]["classe_soft"].append(int(G.decode_body_cont(c_[None], w_[None], prot_c)[0]) == k)
+            acc[tag]["carga"].append(G.decode_payload(im, bits, parts) == s)
+
+        # o que cada roteamento devolve do PRÓPRIO resíduo
+        for tag, got in (("A", None), ("B", R.recuperar_ordinal_banda(ib)),
+                         ("C", R.ordem_de_permutacao(G.simetria_ordem(ic)))):
+            ok = got is not None and np.array_equal(got, ord_true)
+            acc[tag]["ordinal"].append(bool(ok))
+            acc[tag]["corr"].append(0.0 if got is None
+                                    else float(np.corrcoef(R.memoria(r), np.asarray(got, float))[0, 1]))
+
+    out = {}
+    for tag in ("A", "B", "C"):
+        out[tag] = {m: float(np.mean(acc[tag][m])) for m in acc[tag]}
+        out[tag]["linhas_ocupadas"] = linhas[tag]
+    out["A"]["sigma_equivalente"] = float(np.mean(sigmas))
+    out["energia_total_media"] = float(np.mean([np.sum(R.gerar(rng=np.random.default_rng(j)) ** 2)
+                                                for j in range(20)]))
+
+    # ---- figura ----
+    fig, ax = plt.subplots(1, 5, figsize=(16, 4.2))
+    rot = {"A": ("A: espalhado (σ≈0,11)", [9, 30], ["corpo", "carga"]),
+           "B": ("B: banda 16-21", [9, 30, 57], ["corpo", "carga", "resíduo"]),
+           "C": ("C: simetria (0 linhas)", [9, 30], ["corpo", "carga"])}
+    for j, tag in enumerate(("A", "B", "C")):
+        ax[j].imshow(exemplos[tag], cmap="gray", vmin=0, vmax=1, aspect="auto",
+                     interpolation="nearest")
+        ax[j].set_title(rot[tag][0], fontsize=9)
+        ax[j].axhline(30 - 0.5, color="red", lw=0.6)
+        if tag == "B": ax[j].axhline(48 - 0.5, color="deepskyblue", lw=0.6)
+        ax[j].set_xticks([]); ax[j].set_yticks(rot[tag][1])
+        ax[j].set_yticklabels(rot[tag][2], fontsize=7)
+    tags = ("A", "B", "C"); w = 0.26
+    for j, m in enumerate(("classe_cru", "classe_canon", "classe_soft")):
+        ax[3].bar(np.arange(3) + (j - 1) * w, [out[t][m] for t in tags], w, label=m)
+    ax[3].axhline(1 / 6, ls=":", c="k"); ax[3].set_xticks(range(3))
+    ax[3].set_xticklabels(["A espalhado", "B banda", "C simetria"], fontsize=8)
+    ax[3].set_title("classe (6 vias; acaso 0,167)"); ax[3].set_ylim(0, 1.02); ax[3].legend(fontsize=7)
+    for j, m in enumerate(("carga", "ordinal", "corr")):
+        ax[4].bar(np.arange(3) + (j - 1) * w, [out[t][m] for t in tags], w, label=m)
+    ax[4].set_xticks(range(3)); ax[4].set_xticklabels(["A", "B", "C"], fontsize=8)
+    ax[4].set_title("carga × recuperação do resíduo"); ax[4].set_ylim(0, 1.02); ax[4].legend(fontsize=7)
+    fig.suptitle("E5 — a mesma energia de resíduo, três destinos", fontsize=11)
+    fig.tight_layout(); fig.savefig(os.path.join(FIG, "residuo.png"), dpi=130); plt.close(fig)
+    return out
+
+
+# ================= E6: agência (mão dupla) =================
+def _perturb_fraco(img, canal, amp=0.03):
+    """Estímulo fraco = mudança de FORMA num canal (mudança de nível puro é cancelada
+    pela centralização do cosseno — só a forma do traçado vira aresta)."""
+    b = img.reshape(-1, G.R, T_MUNDO).copy()
+    b[4 + canal] += amp * np.sin(np.linspace(0, np.pi, T_MUNDO))
+    return b.reshape(-1, T_MUNDO)
+
+
+def e6_agencia(Ite, yte, tau0=0.7, passos=32, repouso=40, seed=1):
+    """Mão dupla: o que é LIDO altera as PRÓPRRIAS regras de transição.
+
+    1. trajetória fechada vs aberta sob o MESMO evento de resíduo;
+    2. Filtro de Landauer ligado vs desligado (a energia descartada vira tensão);
+    3. critério operacional: mesmo X, resíduo por canal diferente -> próxima transição
+       (aberto = 0 exato; fechado > 0);
+    4. temporariedade: sem leitura, S* e τ voltam ao normal;
+    5. reatividade: τ normal vs τ exausto (densidade de arestas e probabilidade de
+       reagir a um estímulo fraco) — o "mau humor" operacional.
+    """
+    eventos = [R.gerar(rng=np.random.default_rng(900 + t)) for t in range(passos)]
+    ab = A.Agente(S_STAR, tau0=tau0, fechado=False, seed=seed)
+    fc = A.Agente(S_STAR, tau0=tau0, fechado=True, landauer=True, seed=seed)
+    fo = A.Agente(S_STAR, tau0=tau0, fechado=True, landauer=False, seed=seed)
+    X0 = np.full(NV, 0.5)
+    Xa, Xf, Xo = X0.copy(), X0.copy(), X0.copy()
+    hist = {k: [] for k in ("t", "T_fech", "T_abert", "T_semL", "tau_fech",
+                            "tau_abert", "S_fech", "S_abert")}
+    for t in range(passos):
+        Xa = ab.passo(Xa, eventos[t]); Xf = fc.passo(Xf, eventos[t]); Xo = fo.passo(Xo, eventos[t])
+        hist["t"].append(t); hist["T_fech"].append(float(Xf[1])); hist["T_abert"].append(float(Xa[1]))
+        hist["T_semL"].append(float(Xo[1])); hist["tau_fech"].append(fc.tau)
+        hist["tau_abert"].append(ab.tau); hist["S_fech"].append(fc.s[1]); hist["S_abert"].append(ab.s[1])
+
+    # 3. critério: mesmo X, resíduo POR CANAL (é o vetor que diferencia os pesos)
+    s_dev_evento = float(fc.s[1] - S_STAR[1])
+    tau_evento = float(fc.tau)
+    res_vetor = np.array([0.50, 0.10, 0.42, 0.06, 0.30, 0.22])
+    d_f, tau_f, tau_fn = A.criterio_mao_dupla(X0, fc, res_vetor)
+    d_a, _, _ = A.criterio_mao_dupla(X0, ab, res_vetor)
+
+    # 4. temporariedade: sem leitura, o alvo e o limiar voltam ao normal
+    fc.landauer = False
+    Xr = Xf.copy()
+    for t in range(repouso):
+        Xr = fc.passo(Xr, np.zeros((NV, T_MUNDO)))
+        hist["t"].append(passos + t); hist["T_fech"].append(float(Xr[1]))
+        hist["T_abert"].append(float(Xa[1])); hist["T_semL"].append(float(Xo[1]))
+        hist["tau_fech"].append(fc.tau); hist["tau_abert"].append(ab.tau)
+        hist["S_fech"].append(fc.s[1]); hist["S_abert"].append(ab.s[1])
+    s_dev_repouso = float(fc.s[1] - S_STAR[1])
+
+    # 5. reatividade: τ normal vs τ exausto, sobre glifos reais.
+    #    O efeito não está na probabilidade TOTAL de reagir (fraca), está em PODER
+    #    GANHAR relação nova: com τ alto o sistema só perde as que já tinha.
+    rngp = np.random.default_rng(11)
+    N = 1200
+    ii = rngp.integers(0, len(Ite), N); cc = rngp.integers(0, NV, N)
+    ids_dens = np.concatenate([np.where(yte == k)[0][:15] for k in range(6)])   # 90, um por classe
+    reac = {}
+    for t in (tau0, 0.90):
+        reagiu, cria, apaga = [], [], []
+        for j in range(N):
+            alt = _perturb_fraco(Ite[ii[j]], int(cc[j]))
+            ga, gb = G.body_graph(Ite[ii[j]], t), G.body_graph(alt, t)
+            reagiu.append(bool((ga != gb).any()))
+            cria.append(int(((gb - ga) > 0).sum())); apaga.append(int(((ga - gb) > 0).sum()))
+        reac[f"{t}"] = dict(densidade_arestas=float(np.mean(graphs(Ite[ids_dens], t))),
+                            prob_reagir=float(np.mean(reagiu)),
+                            relacoes_ganhas=float(np.mean(cria)),
+                            relacoes_perdidas=float(np.mean(apaga)))
+
+    out = dict(
+        distancia_trajetoria_fechado_vs_aberto=float(np.mean(np.abs(Xf - Xa))),
+        tensao_final_landauer_on=float(Xf[1]), tensao_final_landauer_off=float(Xo[1]),
+        tensao_final_aberto=float(Xa[1]),
+        landauer_medio=float(np.mean(fc.log["landauer"])),
+        criterio_mao_dupla_fechado=d_f, criterio_mao_dupla_aberto=d_a,
+        tau_criterio_com_residuo=float(tau_f), tau_criterio_sem_residuo=float(tau_fn),
+        tau_medio_fechado=float(np.mean(hist["tau_fech"][:passos])),
+        tau_medio_aberto=float(np.mean(hist["tau_abert"][:passos])),
+        tau0=tau0,
+        s_star_desvio_max_evento=float(max(hist["S_fech"][:passos]) - S_STAR[1]),
+        s_star_desvio_no_evento=s_dev_evento,
+        s_star_desvio_apos_repouso=s_dev_repouso,
+        tau_no_evento=tau_evento, tau_apos_repouso=float(fc.tau),
+        reatividade=reac,
+    )
+
+    # ---- figura ----
+    fig, ax = plt.subplots(2, 2, figsize=(11, 7))
+    t_ = hist["t"]
+    ax[0, 0].plot(t_, hist["T_fech"], label="fechado (Landauer on)", lw=1.6)
+    ax[0, 0].plot(t_, hist["T_semL"], label="fechado (Landauer off)", lw=1.2, ls="--")
+    ax[0, 0].plot(t_, hist["T_abert"], label="aberto (mão única)", lw=1.2)
+    ax[0, 0].axvline(passos, color="gray", ls=":", lw=1); ax[0, 0].set_title("tensão X[T]")
+    ax[0, 0].legend(fontsize=7)
+    ax[0, 1].plot(t_, hist["tau_fech"], label="fechado"); ax[0, 1].plot(t_, hist["tau_abert"], label="aberto")
+    ax[0, 1].axhline(tau0, ls=":", c="k", lw=1); ax[0, 1].axvline(passos, color="gray", ls=":", lw=1)
+    ax[0, 1].set_title(f"limiar τ do RIC (τ0={tau0})"); ax[0, 1].legend(fontsize=7)
+    ax[1, 0].plot(t_, hist["S_fech"], label="S* fechado"); ax[1, 0].plot(t_, hist["S_abert"], label="S* aberto")
+    ax[1, 0].axhline(S_STAR[1], ls=":", c="k", lw=1); ax[1, 0].axvline(passos, color="gray", ls=":", lw=1)
+    ax[1, 0].set_title("alvo de T (S*) — muda e volta"); ax[1, 0].legend(fontsize=7)
+    ks = sorted(reac, key=float)
+    labs = [f"τ={k}" for k in ks]; w = 0.26
+    nome = {"densidade_arestas": "relações no glifo",
+            "relacoes_ganhas": "ganhos sob estímulo fraco",
+            "relacoes_perdidas": "perdas sob estímulo fraco"}
+    for j, (m, cor) in enumerate([("densidade_arestas", "tab:orange"),
+                                  ("relacoes_ganhas", "tab:blue"),
+                                  ("relacoes_perdidas", "tab:red")]):
+        ax[1, 1].bar(np.arange(len(ks)) + (j - 1) * w, [reac[k][m] for k in ks], w,
+                     label=nome[m], color=cor)
+    ax[1, 1].set_xticks(range(len(ks))); ax[1, 1].set_xticklabels(labs)
+    ax[1, 1].set_title("reatividade: τ normal vs exausto"); ax[1, 1].legend(fontsize=7)
+    for a in ax.ravel():
+        a.grid(alpha=.3); a.set_xlabel("passo" if a is not ax[1, 1] else "τ")
+    fig.suptitle("E6 — mão dupla: leitura → tensão/limiar → regras de transição", fontsize=11)
+    fig.tight_layout(); fig.savefig(os.path.join(FIG, "agencia.png"), dpi=130); plt.close(fig)
+    return out
 
 
 def main():
@@ -161,6 +438,30 @@ def main():
         ok_can.append(G.decode_payload(ip, bt, pr, G.ALL_PERMS) == s)
     res["carga_permutacao"] = dict(padrao=float(np.mean(ok_std)), canonicalizado=float(np.mean(ok_can)),
                                     classes_de_isomorfismo=11, bits_max_canonicalizado=float(np.log2(11)))
+
+    # ---- E3: o 0,208 publicado é artefato de desempate; uma palavra por isomorfismo resolve ----
+    pr_iso, bt_iso = G.codebook_up_to_isomorphism(D_CARGA)
+    items_iso, r4 = [], np.random.default_rng(17)
+    for _ in range(300):
+        k = int(r4.integers(6)); e = make_set(1, int(r4.integers(1e6)))[0][k]
+        v, a = affect(e); s = int(r4.integers(len(pr_iso)))
+        items_iso.append((G.render(e, v, a, CLASSES[k][0], pr_iso[s], r4), s))
+    limpo_iso, perm_iso = [], []
+    for img, s in items_iso:
+        limpo_iso.append(G.decode_payload(img, bt_iso, pr_iso) == s)
+        perm_iso.append(G.decode_payload(G.t_perm(img, r4, ()), bt_iso, pr_iso, G.ALL_PERMS) == s)
+    res["carga_isomorfismo"] = dict(
+        codebook_padrao_palavras=len(pr), codebook_padrao_shapes=int(len({G.shape(p) for p in pr})),
+        codebook_iso_palavras=len(pr_iso), codebook_iso_bits=float(np.log2(len(pr_iso))),
+        iso_limpo=float(np.mean(limpo_iso)), iso_sob_permutacao=float(np.mean(perm_iso)),
+        observacao="0,208 (número publicado) vem de palavras isomorfas empatando a distância "
+                   "mínima no mesmo glifo; sem essa ambiguidade a carga sob permutação é ~1,0",
+    )
+
+    # ---- curva acurácia x sigma (leitor robusto) e os dois novos experimentos ----
+    res["curva_sigma"] = curva_sigma(Itr, ytr, Ite, yte, tau)
+    res["E5_residuo"] = e5_residuo(Itr, ytr, Ite, yte, ste, Ete, parts, bits, tau, n=300)
+    res["E6_agencia"] = e6_agencia(Ite, yte, tau0=tau)
 
     # ---- demonstração: mensagem de texto em vários glifos emocionais ----
     msg = "Ganhei!"

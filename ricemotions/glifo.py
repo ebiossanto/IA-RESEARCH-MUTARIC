@@ -7,11 +7,18 @@ Imagem (16 linhas-de-patch x 32 colunas; cada linha-de-patch = R=3 linhas de pix
   linhas 4-9   CORPO      os 6 canais internos (E,T,C,B,G,N) ao longo do tempo (procedência INTRÍNSECA)
   linhas 10-15 CARGA      mensagem EXPLÍCITA: partição das 6 linhas em blocos que compartilham portadora
                           (procedência/qualquer conteúdo, estilo RIC: símbolo = grafo-alvo)
+  linhas 16-21 RESÍDUO    (OPCIONAL) banda dedicada: o resíduo do ambiente escrito como ESTRUTURA,
+                          em vez de espalhado como ruído nos pixels — ver docs/05.
 
 Leitura (RIC): patch = linha; feature = linha centrada e normalizada (cosseno = correlação);
 aresta se |cos| > tau; decodificação por menor distância de incidência d_I (Hamming de arestas).
 Diferença para o RIC original (documentada): centramos a feature; sem isso todo cosseno de sinais
 positivos é alto e o grafo colapsa (o "1 grafo único" da Fase 1 do RIC).
+
+Leitura robusta (docs/02 A2 / docs/05): as 3 linhas de pixels de um patch são idênticas no
+glifo limpo, logo a variância ENTRE elas estima o ruído do ambiente. Com isso dá para (i)
+corrigir a atenuação da correlação e (ii) ponderar cada aresta pela fração de variância que é
+sinal — o par não confiável pesa 0 e é ignorado, em vez de virar bit aleatório.
 """
 import itertools
 import numpy as np
@@ -19,8 +26,9 @@ from scipy.linalg import hadamard
 from ricemotions.mundo import NV, T, CLASSES, FAMILIAS
 
 R = 3
-NROWS = 16
+NROWS = 16                               # linhas-de-patch do formato base
 SL_NIVEL, SL_POL, SL_CORPO, SL_CARGA = slice(0, 2), slice(2, 4), slice(4, 10), slice(10, 16)
+SL_RES = slice(16, 22)                   # banda opcional de resíduo (6 canais)
 WALSH = hadamard(32).astype(float)[1:]            # 31 portadoras ortogonais de média zero
 IU = np.triu_indices(NV, 1)
 NP = len(IU[0])                                    # 15 pares
@@ -96,8 +104,10 @@ def codebook_up_to_isomorphism(d_min, seed=0):
 
 
 # ---------------- renderização ----------------
-def render(X, v, act, fam, payload_labels, rng):
-    rows = np.zeros((NROWS, T))
+def render(X, v, act, fam, payload_labels, rng, residuo=None):
+    """residuo: (6, T) opcional em [0,1] -> acrescenta a banda RESÍDUO (linhas 16-21)."""
+    nrows = NROWS + (6 if residuo is not None else 0)
+    rows = np.zeros((nrows, T))
     rows[0] = np.clip(0.5 + 0.4 * np.tanh(3 * v), 0, 1)
     rows[1] = np.clip(act, 0, 1)
     nb = max(payload_labels) + 1
@@ -110,6 +120,8 @@ def render(X, v, act, fam, payload_labels, rng):
     sg = rng.choice([-1.0, 1.0], nb)
     for i, b in enumerate(payload_labels):
         rows[10 + i] = 0.5 + 0.25 * sg[b] * WALSH[idx[1 + b]]
+    if residuo is not None:
+        rows[SL_RES] = np.clip(residuo, 0, 1)
     img = np.repeat(rows, R, axis=0)
     return np.round(np.clip(img, 0, 1) * 255) / 255.0
 
@@ -121,23 +133,37 @@ def t_blur(img):
     k = np.array([1, 1, 1]) / 3.0
     return np.stack([np.convolve(np.pad(r, 1, mode="edge"), k, mode="valid") for r in img])
 def t_miscal(img, rng):
-    b = img.reshape(NROWS, R, T)
-    g = rng.uniform(0.6, 1.4, (NROWS, 1, 1)); o = rng.uniform(-0.15, 0.15, (NROWS, 1, 1))
-    return (b * g + o).reshape(NROWS * R, T)
+    b = img.reshape(-1, R, T)
+    g = rng.uniform(0.6, 1.4, (b.shape[0], 1, 1)); o = rng.uniform(-0.15, 0.15, (b.shape[0], 1, 1))
+    return (b * g + o).reshape(-1, T)
 def t_perm(img, rng, keep=()):
     """Permuta as linhas-de-patch do CORPO e da CARGA (a 'rotação' do RIC: permuta vértices).
-    keep: índices do corpo que ficam fixos (âncoras). A carga é sempre permutada por inteiro."""
-    b = img.reshape(NROWS, R, T).copy()
+    keep: índices do corpo que ficam fixos (âncoras). A carga é sempre permutada por inteiro.
+    A banda RESÍDUO (se existir) não é permutada: ela carrega o índice da simetria."""
+    b = img.reshape(-1, R, T).copy()
     free = [i for i in range(NV) if i not in keep]
     perm_corpo = np.arange(NV)
     perm_corpo[free] = np.array(free)[rng.permutation(len(free))]
     b[4:10] = b[4:10][perm_corpo]
     b[10:16] = b[10:16][rng.permutation(NV)]
-    return b.reshape(NROWS * R, T)
+    return b.reshape(-1, T)
+
+
+def apply_perm(img, p):
+    """Aplica a permutação p (len 6) às linhas do CORPO — o resíduo escrito como simetria."""
+    b = img.reshape(-1, R, T).copy()
+    b[SL_CORPO] = b[SL_CORPO][np.asarray(p)]
+    return b.reshape(-1, T)
+
+
+def undo_perm(img, p):
+    """Desfaz `apply_perm` (inversa da permutação)."""
+    inv = np.argsort(np.asarray(p))
+    return apply_perm(img, inv)
 
 
 # ---------------- leitura RIC ----------------
-def patches(img): return img.reshape(NROWS, R, T).mean(1)
+def patches(img): return img.reshape(-1, R, T).mean(1)
 
 
 def corr(M):
@@ -154,6 +180,60 @@ def body_graph(img, tau):
 def payload_graph(img, tau=0.5):
     c = corr(patches(img)[SL_CARGA])[IU]
     return (np.abs(c) > tau).astype(np.int8)                          # 15 bits
+
+
+# ---------------- leitura robusta (resíduo estimado na própria redundância) ----------------
+def sigma2_pixels(img):
+    """σ² do ruído de PIXEL, estimado pela redundância R=3 do glifo.
+
+    As 3 linhas de pixels de um patch são idênticas quando o glifo é escrito; portanto a
+    variância entre elas é 100% ruído do ambiente. É o "termômetro" gratuito do canal —
+    sem nenhuma informação do rótulo.
+    """
+    b = img.reshape(-1, R, T)
+    return float(np.var(b, axis=1, ddof=1).mean())
+
+
+def body_cont(img, corrigir=True):
+    """Arestas CONTÍNUAS (grafo ponderado) do corpo: `(c, w)`.
+
+    c (15,)  cosseno centralizado por par, corrigido pela atenuação do ruído:
+             c_true ≈ c_obs · sqrt(vo_i·vo_j / (s_i·s_j)), com s² = vo² − σ²̂/R.
+    w (15,)  confiabilidade da aresta = fração da variância temporal que é SINAL.
+             Areasta não confiável (s² ≤ 0) pesa 0 e é IGNORADA na decodificação,
+             em vez de virar um bit aleatório — é isso que derruba o Hamming duro.
+
+    `corrigir=False` devolve (c, 1) puro, para ablação.
+    """
+    P = patches(img)[SL_CORPO]
+    c = corr(P)[IU]
+    if not corrigir:
+        return c, np.ones(NP)
+    n = sigma2_pixels(img) / R                       # ruído na MÉDIA do patch
+    vo = P.var(1)                                    # variância observada (sinal + ruído)
+    si = np.maximum(vo - n, 0.0)                     # variância do sinal estimada
+    si_s = np.maximum(si, 1e-6 * np.maximum(vo, 1e-12))
+    att = np.sqrt(np.clip(vo[IU[0]] * vo[IU[1]] / (si_s[IU[0]] * si_s[IU[1]]), 1.0, 1e4))
+    w = (si / np.maximum(vo, 1e-12))[IU[0]] * (si / np.maximum(vo, 1e-12))[IU[1]]
+    return np.clip(c * att, -1.0, 1.0), w
+
+
+def body_prototypes(imgs, y, n_cls=6, corrigir=True):
+    """Protótipo contínuo por classe: média das arestas do CORPO (imagens de treino)."""
+    C = np.array([body_cont(i, corrigir)[0] for i in imgs])
+    return np.stack([C[y == k].mean(0) for k in range(n_cls)])
+
+
+def decode_body_cont(C, W, protos):
+    """Menor distância PONDERADA pela confiabilidade de cada aresta.
+
+    C (n,15) arestas observadas · W (n,15) pesos · protos (k,15) · -> (n,) rótulos.
+    """
+    if W is None:
+        W = np.ones_like(C)
+    w = np.where(W.sum(-1, keepdims=True) < 1e-9, 1.0, W)      # fallback: sem info, não enviesa
+    d = (w[:, None, :] * (C[:, None, :] - protos[None, :, :]) ** 2).sum(-1)
+    return np.argmin(d / w.sum(-1)[:, None], axis=1)
 
 
 def read_family_relational(img):
@@ -207,6 +287,53 @@ def alphabet(G, y):
     A = np.array([list(g) for g in cnt], dtype=np.int8)
     lab = np.array([cnt[g].most_common(1)[0][0] for g in cnt])
     return A, lab
+
+
+# ---------------- resíduo como SIMETRIA (roteamento C de docs/05) ----------------
+def canon_order(B):
+    """Ordem canônica de um conjunto de linhas-de-patch: pela média da linha, com
+    desempate lexicográfico (invariante à permutação — por isso escritor e leitor
+    concordam sem se comunicarem).
+
+    Aceita tanto a matriz de patches (n, T) quanto o bloco de pixels (n, R, T);
+    no segundo caso a chave é calculada sobre a média das R linhas redundantes.
+    """
+    P = B.mean(1) if B.ndim == 3 else B             # (n, T) em ambos os casos
+    keys = np.vstack([P[:, ::-1].T, P.mean(1)])     # última chave = primária
+    return np.lexsort(keys)
+
+
+def canon_img(img):
+    """Devolve o glifo com o CORPO em ordem canônica (a escrita da simetria)."""
+    b = img.reshape(-1, R, T).copy()
+    b[SL_CORPO] = b[SL_CORPO][canon_order(b[SL_CORPO])]
+    return b.reshape(-1, T)
+
+
+def escrever_simetria(img, p):
+    """CORPO = canônico[p]: a forma canônica é embaralhada pela permutação do resíduo.
+    Zero linhas extras — a informação viaja na simetria dos vértices."""
+    b = img.reshape(-1, R, T).copy()
+    b[SL_CORPO] = b[SL_CORPO][canon_order(b[SL_CORPO])]
+    b[SL_CORPO] = b[SL_CORPO][np.asarray(p, dtype=int)]
+    return b.reshape(-1, T)
+
+
+def simetria_ordem(img):
+    """Recupera `p` a partir do glifo, sem protótipos nem rótulo.
+
+    Prova: observado = K[p] com K ordenado pela chave; o leitor reordena o observado
+    pela MESMA chave, logo `ordem_leitor = p⁻¹` e `p = argsort(ordem_leitor)`.
+    """
+    return np.argsort(canon_order(patches(img)[SL_CORPO]))
+
+
+def ler_corpo_canonico(img):
+    """CORPO do glifo já alinhado na forma canônica (é o que se compara ao alfabeto)."""
+    b = img.reshape(-1, R, T)
+    out = b.copy()
+    out[SL_CORPO] = b[SL_CORPO][canon_order(b[SL_CORPO])]
+    return out.reshape(-1, T)
 
 
 # ---------------- linhas de base por NÍVEL (mesma imagem) ----------------

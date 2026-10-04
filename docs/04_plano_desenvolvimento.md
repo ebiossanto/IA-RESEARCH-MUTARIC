@@ -7,16 +7,31 @@ para não virar lista infinita. Esforço estimado para uma pessoa, com o código
 
 ## P0 — Travar o que existe (1–2 dias)
 
-| # | Tarefa | Pronto quando |
-|---|---|---|
-| P0.1 | `python run_all.py` roda limpo em Windows e Linux | testes + experimentos verdes em ambas as plataformas |
-| P0.2 | `codebook_up_to_isomorfismo()` entra no E3 | `carga_permutacao` mostra `canonicalizado ≈ 1,0` e a curva `bits × σ` é regenerada; JSON e figura atualizados |
-| P0.3 | Decodificação **soft** do grafo (ponderar bit por `|cos| − τ`) | `6c_relacional` em σ=0,10 **> 0,6** (hoje 0,334 = chance), sem piorar o caso limpo |
-| P0.4 | Curva acurácia × σ (hoje há pontos isolados) | gráfico com 6+ valores de σ para cada método |
-| P0.5 | CI mínima (GitHub Actions: `pip install -r requirements.txt && python tests/test_smoke.py`) | badge verde no README |
+| # | Tarefa | Pronto quando | status (04/10/2026) |
+|---|---|---|---|
+| P0.1 | `python run_all.py` roda limpo em Windows e Linux | testes + experimentos verdes em ambas as plataformas | **feito** — 21/21 testes |
+| P0.2 | `codebook_up_to_isomorfismo()` entra no E3 | `carga_permutacao` mostra `canonicalizado ≈ 1,0` e a curva `bits × σ` é regenerada; JSON e figura atualizados | **feito** — `carga_isomorfismo`: 0,208 → **1,000** limpo e sob permutação (`docs/05` §5) |
+| P0.3 | Decodificação **soft** do grafo (ponderar bit por `\|cos\| − τ`) | `6c_relacional` em σ=0,10 **> 0,6** (hoje 0,334 = chance), sem piorar o caso limpo | **feito** — `body_cont` + de-atenuação + pesos: σ=0,10 → **0,733** (limpo 0,919 → 0,892, ver `docs/05` §2.2) |
+| P0.4 | Curva acurácia × σ (hoje há pontos isolados) | gráfico com 6+ valores de σ para cada método | **feito** — 7 valores × 4 leitores, `figs/curva_sigma.png` |
+| P0.5 | CI mínima (GitHub Actions: `pip install -r requirements.txt && python tests/test_smoke.py`) | badge verde no README | **pendente** |
 
 > **Fechar a conta do A3/A2 antes de qualquer afirmação nova.** São os dois números
 > que mais enfraquecem o texto hoje.
+> *(A3 fechado em `docs/05` §5.4: o 0,208 era desempate entre palavras isomorfas.)*
+
+### Fechado neste ciclo (além do P0)
+
+`docs/05_residuo_e_agencia.md` entrega os quatro itens acima **e** os dois problemas
+conceituais abertos em `03`:
+
+| item | onde |
+|---|---|
+| filtro de feedback de Landauer (energia descartada → T/C) | `docs/05` §3 |
+| modularização do ambiente (resíduo → τ → reatividade) | `docs/05` §4 |
+| resíduo como simetria (720 permutações, 0 linhas) | `docs/05` §5 (E5) |
+| agência de mão dupla, com critério operacional | `docs/05` §6 (E6) |
+| resposta a "eu não sinto, eu computo" | `docs/05` §8 |
+
 
 ## P1 — Fazer a afirmação sobreviver a escrutínio (1–2 semanas)
 
@@ -34,11 +49,11 @@ para não virar lista infinita. Esforço estimado para uma pessoa, com o código
 Hoje `mundo.py` é um roteiro (ver `03`, L1–L6). Esta fase é o que transforma o
 pacote de "leitor de glifos" em "emoção comunicada".
 
-| # | Tarefa | Pronto quando |
-|---|---|---|
-| P2.1 | Trocar `mundo.episode()` por `teoa.core` (dinâmica E,T,C, regimes, histerese) com um adaptador `estado → (6,32)` | mesmos 4 experimentos rodam com o TEOA real; comparação lado a lado |
-| P2.2 | **Agente**: escolhe ações, paga custo, o mundo muda; a valência sai da dinâmica e não do roteiro | existe `agente.py` com política e `resultado` = recompensa/estado final |
-| P2.3 | **Loop de comunicação**: agente A escreve glifo, agente B lê e isso altera a ação de B | experimento com 2 agentes e métrica de ganho/mutual information |
+| # | Tarefa | Pronto quando | status (04/10/2026) |
+|---|---|---|---|
+| P2.1 | Trocar `mundo.episode()` por `teoa.core` (dinâmica E,T,C, regimes, histerese) com um adaptador `estado → (6,32)` | mesmos 4 experimentos rodam com o TEOA real; comparação lado a lado | **pendente** |
+| P2.2 | **Agente**: escolhe ações, paga custo, o mundo muda; a valência sai da dinâmica e não do roteiro | existe `agente.py` com política e `resultado` = recompensa/estado final | **parcial** — `agente.py` existe com transição e mão dupla (`docs/05` §6), mas **sem custo/recompensa** e a valência ainda sai de `affect()` |
+| P2.3 | **Loop de comunicação**: agente A escreve glifo, agente B lê e isso altera a ação de B | experimento com 2 agentes e métrica de ganho/mutual information | **pendente** (o feedback de hoje é do leitor sobre as próprias regras, não sobre outro agente) |
 | P2.4 | Memória: sequência de glifos no tempo (ciclos, histerese do TEOA) | série temporal de glifos e detecção de regime |
 | P2.5 | Mix de emoções (dois episódios sobrepostos) e glifos "ambíguos" por projeto | E1–E4 rodando em classes multi-rótulo |
 
@@ -60,12 +75,16 @@ o relacional continuar pior, a conclusão é que a hipótese relacional **não s
 
 ## Definição de pronto do projeto (versão 0.2)
 
-- [ ] `run_all.py` verde em CI.
+- [x] **P0.1–P0.4 fechados** (04/10/2026): `run_all.py` verde com 21 testes, leitor
+      robusto a ruído, curva acurácia × σ e carga isomórfica — `docs/05` §2 e §5.
+- [ ] `run_all.py` verde em CI. *(P0.5, pendente)*
 - [ ] Números do E1–E4 com IC e teste de hipótese.
 - [ ] Resultado nulo publicado com a mesma proeminência do resultado positivo.
 - [ ] Um experimento com `teoa.core` de verdade (P2.1).
 - [ ] Link do repo PIXEL em `docs/03` §5.
-- [ ] Toda escolha feita *depois* de ver resultado, listada.
+- [ ] Toda escolha feita *depois* de ver resultado, listada. *(parcial: a troca da
+      métrica de reatividade está listada em `docs/05` §7.5; as escolhas de
+      `k_t`, `k_tau`, `k_relax`, `β` e `J` ainda não)*
 
 ## Registro de decisões pendentes
 

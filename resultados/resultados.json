@@ -209,6 +209,130 @@
   "classes_de_isomorfismo": 11,
   "bits_max_canonicalizado": 3.4594316186372973
  },
+ "carga_isomorfismo": {
+  "codebook_padrao_palavras": 41,
+  "codebook_padrao_shapes": 9,
+  "codebook_iso_palavras": 5,
+  "codebook_iso_bits": 2.321928094887362,
+  "iso_limpo": 1.0,
+  "iso_sob_permutacao": 1.0,
+  "observacao": "0,208 (número publicado) vem de palavras isomorfas empatando a distância mínima no mesmo glifo; sem essa ambiguidade a carga sob permutação é ~1,0"
+ },
+ "curva_sigma": {
+  "0.0": {
+   "duro": 0.918888888888889,
+   "cont": 0.8916666666666667,
+   "cont_corrigido": 0.8916666666666667,
+   "cont_ponderado": 0.8916666666666667,
+   "sigma2_medio": 8.59935243332746e-34
+  },
+  "0.05": {
+   "duro": 0.7594444444444445,
+   "cont": 0.8088888888888889,
+   "cont_corrigido": 0.7511111111111112,
+   "cont_ponderado": 0.7938888888888888,
+   "sigma2_medio": 0.0024868031798422692
+  },
+  "0.1": {
+   "duro": 0.33777777777777773,
+   "cont": 0.49055555555555547,
+   "cont_corrigido": 0.6983333333333333,
+   "cont_ponderado": 0.7327777777777778,
+   "sigma2_medio": 0.009913515063163713
+  },
+  "0.15": {
+   "duro": 0.19444444444444445,
+   "cont": 0.385,
+   "cont_corrigido": 0.59,
+   "cont_ponderado": 0.6455555555555555,
+   "sigma2_medio": 0.022742367550030906
+  },
+  "0.2": {
+   "duro": 0.1738888888888889,
+   "cont": 0.27499999999999997,
+   "cont_corrigido": 0.5227777777777778,
+   "cont_ponderado": 0.5438888888888889,
+   "sigma2_medio": 0.039997506063831345
+  },
+  "0.3": {
+   "duro": 0.16722222222222224,
+   "cont": 0.18166666666666667,
+   "cont_corrigido": 0.4072222222222222,
+   "cont_ponderado": 0.39055555555555554,
+   "sigma2_medio": 0.09073104453215046
+  },
+  "0.4": {
+   "duro": 0.16666666666666666,
+   "cont": 0.16722222222222224,
+   "cont_corrigido": 0.3211111111111111,
+   "cont_ponderado": 0.30777777777777776,
+   "sigma2_medio": 0.1582407830669616
+  }
+ },
+ "E5_residuo": {
+  "A": {
+   "classe_cru": 0.27,
+   "classe_canon": 0.27,
+   "classe_soft": 0.32,
+   "carga": 1.0,
+   "ordinal": 0.0,
+   "corr": 0.0,
+   "linhas_ocupadas": 0,
+   "sigma_equivalente": 0.10943470302092113
+  },
+  "B": {
+   "classe_cru": 0.9333333333333333,
+   "classe_canon": 0.8366666666666667,
+   "classe_soft": 0.5133333333333333,
+   "carga": 1.0,
+   "ordinal": 0.9766666666666667,
+   "corr": 0.9431959456927056,
+   "linhas_ocupadas": 6
+  },
+  "C": {
+   "classe_cru": 0.30333333333333334,
+   "classe_canon": 0.8366666666666667,
+   "classe_soft": 0.5133333333333333,
+   "carga": 1.0,
+   "ordinal": 1.0,
+   "corr": 0.9432317651755587,
+   "linhas_ocupadas": 0
+  },
+  "energia_total_media": 17.271562854113434
+ },
+ "E6_agencia": {
+  "distancia_trajetoria_fechado_vs_aberto": 0.0973505294129035,
+  "tensao_final_landauer_on": 0.5222184060860989,
+  "tensao_final_landauer_off": 0.24800892495441568,
+  "tensao_final_aberto": 0.24788550199701478,
+  "landauer_medio": 0.6156831059660055,
+  "criterio_mao_dupla_fechado": 0.0061545212280002815,
+  "criterio_mao_dupla_aberto": 0.0,
+  "tau_criterio_com_residuo": 0.8708333333333333,
+  "tau_criterio_sem_residuo": 0.7374999999999999,
+  "tau_medio_fechado": 0.8278890715508396,
+  "tau_medio_aberto": 0.7,
+  "tau0": 0.7,
+  "s_star_desvio_max_evento": 0.2535688725649222,
+  "s_star_desvio_no_evento": 0.2497904564494442,
+  "s_star_desvio_apos_repouso": 0.019761405923315323,
+  "tau_no_evento": 0.8673149011899169,
+  "tau_apos_repouso": 0.7038292033425232,
+  "reatividade": {
+   "0.7": {
+    "densidade_arestas": 0.14629629629629629,
+    "prob_reagir": 0.11833333333333333,
+    "relacoes_ganhas": 0.06666666666666667,
+    "relacoes_perdidas": 0.07333333333333333
+   },
+   "0.9": {
+    "densidade_arestas": 0.07222222222222222,
+    "prob_reagir": 0.09666666666666666,
+    "relacoes_ganhas": 0.02666666666666667,
+    "relacoes_perdidas": 0.09166666666666666
+   }
+  }
+ },
  "demo_mensagem": {
   "mensagem": "Ganhei!",
   "glifos": 11,

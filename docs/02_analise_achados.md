@@ -6,6 +6,11 @@ Sementes fixas: treino 1, validação 2, teste 3; τ escolhido **na validação*
 **Conjuntos:** 2400 treino / 900 validação / 1800 teste · 6 classes balanceadas.
 **Carga:** `d_min=4` → 41 palavras = **5,36 bits** por glifo.
 
+> **Este documento cobre E1–E4.** Os experimentos novos (curva acurácia × σ, E5
+> resíduo, E6 agência) e a resposta ao argumento *"eu não sinto, eu computo"*
+> estão em `docs/05_residuo_e_agencia.md`. Os achados A2, A3 e A5 ganharam notas
+> de status apontando para lá.
+
 ---
 
 ## 1. Tabela-resumo (E1–E4)
@@ -75,6 +80,14 @@ decodificação por Hamming não tem correção de erro.
 > **Ação (P0):** (a) decodificação "soft" — usar a correlação contínua e ponderar
 > cada bit por sua margem `|cos| − τ`; (b) τ com zona morta/histerese;
 > (c) reportar a curva acurácia × σ (hoje só há pontos isolados).
+>
+> **Fechado em `docs/05` §2** (04/10/2026): `body_cont` faz (a) com de-atenuação e
+> peso de confiabilidade, e (c) virou `curva_sigma.png` com 7 valores de σ.
+> Na curva nova, σ=0,10: **0,338 → 0,733** (o E1 mede 0,334 para o mesmo limiar; a
+> diferença é só a semente do ruído); σ=0,40: 0,167 (= chance) → 0,308. O caso limpo
+> *piora* um pouco (0,919 → 0,892) e acima de σ≈0,30 os pesos voltam a atrapalhar
+> levemente — ambos reportados na tabela de `docs/05`. (b) continua aberto; hoje
+> o τ do ambiente é `tau_efetivo`, sem histerese.
 
 ### A3 — **Bug**: a carga sob permutação perde por colisão de isomorfismos
 
@@ -96,6 +109,11 @@ JSON e o teto `log₂(11)=3,46 bits`.
 > máximo uma palavra por shape (testada em `tests/test_smoke.py`).
 > **O que falta:** rodar o E3 com ela e regenerar a curva capacidade × robustez —
 > o número publicado (0,208) é *artefato*, não limite físico.
+>
+> **Fechado em `docs/05` §5.4** (04/10/2026): `carga_isomorfismo` roda o E3 com ela —
+> **0,208 → 1,000** limpo e sob permutação. O codebook padrão tem 41 palavras mas só
+> **9 shapes**; o isomórfico tem 5 palavras = **2,32 bits** sem ambiguidade. O número
+> publicado 0,208 continua gravado no JSON como artefato documentado.
 
 ### A4 — A "família por polaridade" é rótulo embutido, não leitura relacional
 
@@ -119,6 +137,14 @@ do tamanho da busca, não da escolha da normalização**.
 > **Ação:** testar canonicalização *real* (forma canônica do grafo, uma única
 > normalização) em vez de argmin sobre 720 variantes; ou fixar âncoras e reduzir a
 > busca a 24.
+>
+> **Situação (04/10/2026):** a *forma canônica do grafo* não foi feita — `0,666`
+> continua sendo o número publicado e o argmin sobre 720 continua caro e com
+> múltiplas comparações. O que se fez em `docs/05` §5 foi outro: **em vez de
+> buscar entre 720 variantes, ordenar as linhas do corpo por uma chave invariante
+> à permutação** (média + desempate léxico), que resolve o problema *para o E5*
+> sem busca nenhuma. O custo dessa leitura canônica foi medido: **0,933 → 0,837**.
+> A ação original (canonizar o grafo) segue aberta.
 
 ### A6 — O "alfabeto" é um 1-NN supervisão disfarçado, e a procedência é roteiro
 
