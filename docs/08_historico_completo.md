@@ -166,7 +166,7 @@ Os achados que **pioraram a própria história** e por isso estão publicados:
 ## 6. Estado atual e fila
 
 - **Repositório:** `github.com/ebiossanto/IA-RESEARCH-MUTARIC` (**público**, `main`);
-  CI verde em Windows e Ubuntu (27/27); 5 commits.
+  CI verde em Windows e Ubuntu (27/27); histórico completo em `git log` (6 ciclos, §2).
 - **Código:** 6 módulos (`mundo`, `glifo`, `residuo`, `agente`, `homeostase`,
   `experimentos`) + `tests/` (27) + `run_all.py`.
 - **Saídas:** 8 figuras em `figs/`, `resultados/resultados.json` (determinístico,
@@ -237,6 +237,6 @@ loses to a trivial baseline" and two real bugs), mid-course redefinitions
 prominently as positive ones; no silent change to published numbers; I/O and
 telemetry outside the core; acceptance criteria for every item).
 
-**Now:** 5 commits, 27 tests, 9 documents, 8 figures, CI green; the queue is P1
+**Now:** 27 tests, 9 documents, 8 figures, CI green; the queue is P1
 (baselines + bootstrap CIs + perceptual transformations) then P2 (the real TEOA
 core). Resume with `docs/07_continuidade.md`.
