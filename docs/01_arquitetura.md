@@ -115,6 +115,9 @@ fixo) e da CARGA sempre por inteiro.
 | **E8** | o benchmark de sobrevivência mede emoção? (reprodução fiel + ablação 2×2×2 + varredura) | `E8_sobrevivencia` (ciclos, limites analíticos, efeito do `S*`) |
 | **E9** | a cifra cuja chave é o resíduo tem quantos bits? | `E9_chave_residuo` (espaço de chave, força bruta) |
 
+A linha **curva σ** é um experimento à parte **sem número "E"** (é o item P0.4 do
+plano, feito junto com o leitor robusto). Ou seja: são E1–E9 **mais** a curva × σ.
+
 Análise, vereditos e provas de E7–E9: `docs/06_analise_mutacore.md`.
 
 Boas práticas **já** seguidas aqui (manter):
@@ -155,6 +158,11 @@ python tests/test_smoke.py
 | o critério de mão dupla era contaminado pela relaxação dupla de `s` | snapshots do estado interno entre as duas chamadas (`criterio_mao_dupla`) |
 
 Os **números** dos experimentos não foram alterados por essas correções.
+
+> **Nota de cronologia:** as três últimas linhas (E5, `canon_order`, critério de mão
+> dupla) corrigem código do **segundo** ciclo (`fdf6203`), que introduziu E5/E6 —
+> entraram aqui porque a tabela lista todas as correções da reorganização, feita em
+> duas etapas. O detalhe de cada uma está em `docs/05` §5.3 e §7.6.
 
 Ciclo seguinte (MutaCore): `docs/06` §8 lista as correções de **código do documento
 analisado** (snippet inerte, `cpu_percent` zerado, `landauer_stress` não usado) e uma

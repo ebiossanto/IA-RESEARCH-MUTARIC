@@ -51,7 +51,7 @@ A decodificação (`decode_body_cont`) minimiza `Σ w·(c − protótipo)²`. **
 confiável pesa 0 e é ignorada**, em vez de virar um bit aleatório — foi isso que
 derrubava o Hamming duro.
 
-### 2.2 Resultado — `curva_sigma.png`
+### 2.2 Resultado — `figs/curva_sigma.png`
 
 Acurácia balanceada (6 classes), mesma divisão, mesmo `τ=0,7` escolhido na validação:
 
@@ -111,7 +111,11 @@ s    ← s0 + (s − s0)·(1 − k_relax)   (relaxamento: a mudança é TEMPORÁ
 | tensão final `X[T]` | **0,522** | 0,248 | 0,248 |
 | alvo `S*[T]` — desvio máximo | **+0,254** | 0 | 0 |
 | desvio após 40 passos de repouso | **+0,020** | 0 | 0 |
-| τ médio | 0,828 | 0,806 | 0,700 |
+| τ médio | 0,828 | 0,805 | 0,700 |
+
+Chaves em `E6_agencia`: `tau_medio_fechado` · `tau_medio_landauer_off` ·
+`tau_medio_aberto` (esta linha era o único número da tabela sem chave no JSON —
+gravado agora em `resultados.json`).
 
 A tensão **mais que dobra** com o filtro ligado e volta ao normal quando a leitura
 para — ver `figs/agencia.png`.
@@ -379,11 +383,11 @@ entre as causas da próxima transição — e há um número que prova a diferen
 
 | item | status | onde |
 |---|---|---|
-| P0.2 `codebook_up_to_isomorfismo` no E3 | **feito** — `carga_isomorfismo`, 0,208 → 1,000 | §5, `resultados.json` |
+| P0.2 `codebook_up_to_isomorphism` no E3 | **feito** — `carga_isomorfismo`, 0,208 → 1,000 | §5, `resultados.json` |
 | P0.3 decodificação soft | **feito** — `body_cont` + correção + pesos | §2 |
 | P0.4 curva acurácia × σ | **feito** — 7 valores de σ | §2.2, `figs/curva_sigma.png` |
 | P0.1 `run_all.py` limpo | **feito** — hoje 27/27 testes | `tests/test_smoke.py` |
-| P0.5 CI (GitHub Actions) | **não feito** | — |
+| P0.5 CI (GitHub Actions) | **feito** — `.github/workflows/ci.yml`, 27/27 em Windows e Linux | `docs/04`, badge no README |
 | P1.7 carga espalhada + decodificador | **origem**: ideia recusada do MutaCore (não verificável lá) | `docs/06` §8.5/§9, `docs/04` P1.7 |
 | P2.2 "Agente" | **parcial** — existe `agente.py` com política e transição, mas ainda sem custo/recompensa nem `teoa.core` | §6 |
 | L2 (sem agente) | **parcialmente fechada** | `docs/03` |

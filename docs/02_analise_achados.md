@@ -8,8 +8,9 @@ Sementes fixas: treino 1, validação 2, teste 3; τ escolhido **na validação*
 
 > **Este documento cobre E1–E4.** Os experimentos novos (curva acurácia × σ, E5
 > resíduo, E6 agência) e a resposta ao argumento *"eu não sinto, eu computo"*
-> estão em `docs/05_residuo_e_agencia.md`. Os achados A2, A3 e A5 ganharam notas
-> de status apontando para lá.
+> estão em `docs/05_residuo_e_agencia.md`; a verificação externa do documento
+> MutaCore (E7–E9) está em `docs/06_analise_mutacore.md`. Os achados A2, A3 e A5
+> ganharam notas de status apontando para lá.
 
 ---
 
@@ -98,14 +99,19 @@ o primeiro índice encontrado — arbitrário. Medido:
 | codebook | limpo | após permutação + canonical |
 |---|---|---|
 | `codebook(4)` — 41 palavras | 1,000 | **0,146 – 0,208** |
-| `codebook_up_to_isomorfismo(1)` — 11 palavras | 1,000 | **1,000** (verificado) |
+| `codebook_up_to_isomorphism(1)` — 11 palavras | 1,000 | **1,000** (verificado) |
 
 Há exatamente **11 classes de isomorfismo** de 6 vértices (= número de partições de
 6 = shapes `(6),(5,1),(4,2),(4,1,1),(3,3),(3,2,1),(3,1,1,1),(2,2,2),(2,2,1,1),
 (2,1,1,1,1),(1,1,1,1,1,1)`), o que confirma o `classes_de_isomorfismo=11` gravado no
 JSON e o teto `log₂(11)=3,46 bits`.
 
-> **Correção já implementada:** `glifo.codebook_up_to_isomorfismo()` mantém no
+> **Os dois `d_min` da tabela acima:** a linha do codebook isomórfico usa `d_min=1`
+> (**11 palavras** — é o caso coberto por `test_isomorfismo`); o número gravado no
+> JSON (`carga_isomorfismo`) é `d_min=4`, com **5 palavras = 2,32 bits**. Os dois
+> dão **1,000** limpo e sob permutação.
+
+> **Correção já implementada:** `glifo.codebook_up_to_isomorphism()` mantém no
 > máximo uma palavra por shape (testada em `tests/test_smoke.py`).
 > **O que falta:** rodar o E3 com ela e regenerar a curva capacidade × robustez —
 > o número publicado (0,208) é *artefato*, não limite físico.

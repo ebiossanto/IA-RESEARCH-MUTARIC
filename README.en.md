@@ -2,7 +2,9 @@
 
 [![CI](https://github.com/ebiossanto/IA-RESEARCH-MUTARIC/actions/workflows/ci.yml/badge.svg)](https://github.com/ebiossanto/IA-RESEARCH-MUTARIC/actions/workflows/ci.yml)
 
-> English version. The full documentation (`docs/`) is in Portuguese.
+> English version. The full documentation (`docs/`) is in Portuguese — start at
+> [`docs/00_indice.md`](docs/00_indice.md) (index) and
+> [`docs/07_continuidade.md`](docs/07_continuidade.md) (how to resume the work).
 
 The bridge between the **TEOA** project (*Theory of the Artificial Optimal State* —
 **why** and **when** an emotion arises) and the **PIXEL/RIC** project (a *relational
@@ -30,6 +32,7 @@ number — it lists what the results do **not** support.
 README.md / README.en.md     this file / Portuguese version
 requirements.txt .gitignore  numpy, scipy, matplotlib
 run_all.py                   entry point: tests + experiments
+.github/workflows/ci.yml     CI: 27 tests on Windows + Linux
 ricemotions/
   mundo.py                   TEOA side: episodes, valence, labels   (no I/O)
   glifo.py                   PIXEL/RIC side: write, read, graphs     (no I/O)
@@ -38,7 +41,7 @@ ricemotions/
   homeostase.py              MutaCore: endogenous residue, telemetry → S*/τ, policy
   experimentos.py            E1–E9, figures, the only module with I/O
 tests/test_smoke.py          contracts + regression of published numbers
-docs/                        6 documents: architecture · findings · bridge · roadmap · residue/agency · MutaCore
+docs/                        9 documents: index · architecture · findings · bridge · roadmap · residue/agency · MutaCore · continuity · history
 figs/  resultados/           generated figures and resultados/resultados.json
 ```
 
@@ -58,12 +61,15 @@ and `resultados/resultados.json`.
 | method | clean | noise σ=0.10 | brightness | row permutation |
 |---|---|---|---|---|
 | relational (RIC graph), hard threshold | 0.919 | **0.334** | 0.919 | 0.193 |
-| baseline `level+delta` | **1.000** | **1.000** | 0.998 | 0.294 |
+| baseline `level+delta` | **1.000** | **1.000** | 0.998 | 0.294\*\* |
 | payload, 5.36 bits | 1.000 | 1.000 | 1.000 | 0.117 → **1.000**\* |
 | **robust reader** (σ̂ from R=3 redundancy + attenuation correction + reliability weights) | 0.892 | **0.733** | — | — |
 
 \* with `codebook_up_to_isomorphism()`; the previously published 0.208 was an artifact
 of collisions between isomorphic words (see findings A3).
+\*\* under permutation what was measured is `delta` alone = 0.294 (and `level` =
+0.254); `level+delta` does not run in that condition — the correct table is in
+`docs/02` §1.
 
 τ = 0.7 is selected on the **validation** split; train/val/test come from seeds
 1/2/3; 2400/900/1800 glyphs.
@@ -94,7 +100,8 @@ of collisions between isomorphic words (see findings A3).
 ## Analysis of the attached MutaCore document (`docs/06`, in Portuguese)
 
 Rule applied: **no claim was accepted without first being reproduced numerically.**
-Three mechanisms were adopted; six claims failed.
+Four mechanisms were adopted (seven code entries — `docs/06` §2); of the 18 claims,
+**six failed**, four were partial or unverifiable and eight were confirmed.
 
 | Claim in the document | Verdict | Evidence |
 |---|---|---|
@@ -174,12 +181,12 @@ not a programming problem. Full argument in `docs/05` §8.
 ## Next steps
 
 See `docs/04_plano_desenvolvimento.md` (P0–P3, each with acceptance criteria).
-**P0.1–P0.4 are done** (isomorphism-aware payload, robust soft decoding,
-accuracy-vs-σ curve, clean `run_all.py`); **P0.5** (CI) and **P1** remain: real
+**P0.1–P0.5 are done** (isomorphism-aware payload, robust soft decoding,
+accuracy-vs-σ curve, clean `run_all.py`, CI on Windows + Linux); **P1** remains: real
 baselines, bootstrap hypothesis tests, perceptual transformations, a neutral band,
 plus **P1.7** (payload as a channel: spreading + decoder — the only MutaCore idea
 left as future work). Then **P2**: wire the actual TEOA core and a two-agent
-communication loop.
+communication loop. How to resume: `docs/07_continuidade.md`.
 
 ## Relation to the TEOA project
 

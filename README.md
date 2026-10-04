@@ -21,15 +21,20 @@ tentam recuperar **família afetiva, procedência e uma carga explícita de 5,36
 
 ## Leia nesta ordem
 
+0. `docs/00_indice.md` — índice: o que cada documento responde + ordens de leitura.
 1. `docs/01_arquitetura.md` — o que cada módulo faz, formatos, contrato.
 2. `docs/02_analise_achados.md` — números + 8 achados (inclui um bug já corrigido).
 3. `docs/03_relacao_pixel_teoa.md` — a ponte TEOA × PIXEL: o que está ligado e as 7 lacunas.
-4. `docs/04_plano_desenvolvimento.md` — P0–P3 com critério de aceite (P0.1–P0.4 concluídos).
+4. `docs/04_plano_desenvolvimento.md` — P0–P3 com critério de aceite (P0.1–P0.5 concluídos).
 5. `docs/05_residuo_e_agencia.md` — resíduo, Landauer, τ e a **agência de mão dupla**
    (inclui a resposta a *"eu não sinto, eu computo"*).
 6. `docs/06_analise_mutacore.md` — análise do documento **MutaCore/RIC**: cada
    afirmação reproduzida numericamente; o que é correto entrou no código, o que não
    é ficou refutado com prova.
+7. `docs/07_continuidade.md` — **retomada**: estado atual, regras decididas,
+   próximo passo e checklist para adicionar um experimento.
+8. `docs/08_historico_completo.md` — **relatório completo**: todos os estudos
+   feitos e todas as mudanças de direção.
 
 ## Rodar
 
@@ -55,7 +60,7 @@ ricemotions/                pacote importável
   homeostase.py             MutaCore: resíduo endógeno, S*/τ por telemetria, política
   experimentos.py           E1-E9, figuras, único lugar com I/O
 tests/test_smoke.py         sanidade + regressão dos números publicados
-docs/                       6 documentos (arquitetura, análise, ponte, plano, resíduo/agência, MutaCore)
+docs/                       9 documentos (índice, arquitetura, análise, ponte, plano, resíduo/agência, MutaCore, continuidade, histórico)
 figs/                       figuras geradas
 resultados/                 resultados.json (regenerável)
 ```
@@ -65,11 +70,13 @@ resultados/                 resultados.json (regenerável)
 | | limpo | ruído σ=0,10 | brilho | permutação de linhas |
 |---|---|---|---|---|
 | relacional (RIC) | 0,919 | **0,334** | 0,919 | 0,193 |
-| baseline `nivel+delta` | **1,000** | **1,000** | 0,998 | 0,294 |
+| baseline `nivel+delta` | **1,000** | **1,000** | 0,998 | 0,294\*\* |
 | carga (5,36 bits) | 1,000 | 1,000 | 1,000 | 0,117 → **1,000**\* |
 
-\* com `codebook_up_to_isomorfismo()`; o valor publicado (0,208) era artefato de
+\* com `codebook_up_to_isomorphism()`; o valor publicado (0,208) era artefato de
 colisão entre palavras isomorfas (`docs/02`, A3).
+\*\* sob permutação o que foi medido é `delta` puro = 0,294 (e `nível` = 0,254);
+`nivel+delta` não roda nessa condição — ver a tabela certa em `docs/02` §1.
 
 **Leitura correta:** o código relacional ganha em **invariância afim** (brilho e
 descalibração derrubam a baseline de nível para 0,51) e perde em **ruído** e em
@@ -89,7 +96,7 @@ sinal é menor que o ruído (em vez de virar bit sorteado):
 | 0,20 | 0,174 | **0,544** |
 | 0,40 | 0,167 (=chance) | 0,308 |
 
-Também fechado: `codebook_up_to_isomorfismo()` no E3 — a carga sob permutação vai de
+Também fechado: `codebook_up_to_isomorphism()` no E3 — a carga sob permutação vai de
 **0,208 (artefato) para 1,000**.
 
 **2. O resíduo do ambiente tem destino (E5).** Mesma energia, três roteamentos:
@@ -120,7 +127,9 @@ Com τ exausto (0,90) o sistema ganha **60% menos relações novas** sob estímu
 ## Análise do documento MutaCore (04/10/2026 — `docs/06`)
 
 Regra adotada: **nenhuma afirmação foi aceita sem ser reproduzida numericamente.**
-Três mecanismos entraram no código; seis alegações não passaram na prova.
+Quatro mecanismos novos entraram no código (7 entradas — tabela `docs/06` §2); das
+18 afirmações do documento, **6 não passaram** na prova, 4 ficaram parciais ou não
+verificáveis e 8 foram confirmadas.
 
 | Afirmação do documento | Veredito | Prova |
 |---|---|---|
@@ -156,11 +165,12 @@ roteiro) — contra `ΔT = +0,274` do nosso E6. E o código que ele manda colar 
 
 ## Próximo passo
 
-`docs/04_plano_desenvolvimento.md`: **P0.5** (CI) e **P1** — ICs e teste de hipótese
+`docs/04_plano_desenvolvimento.md`: **P0 fechado** (testes, codebook de isomorfismo,
+leitor soft, curva × σ e CI verde). A fila agora é **P1** — ICs e teste de hipótese
 para E1–E4, baseline séria (logística/MLP), transformações perceptivas reais, faixa
 de neutro e **P1.7** (carga como canal: espalhamento + decodificador, a única ideia
 do MutaCore que ficou como trabalho futuro). Depois **P2.1**, trocar
-`mundo.episode()` por `teoa/core.py` de verdade.
+`mundo.episode()` por `teoa/core.py` de verdade. Como retomar: `docs/07`.
 
 ---
 

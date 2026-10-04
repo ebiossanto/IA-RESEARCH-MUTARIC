@@ -42,8 +42,12 @@ Reprodução integral: `python run_all.py`.
 | 14 | Telemetria → `S*` e `τ` (§C) | **Correto — incorporado** | §2 |
 | 15 | Política `DEFENSIVA`/`EXPLORATORIA` pela distância a `S*` (§D) | **Correto — incorporado** | §2 |
 | 16 | Coleta de telemetria com `psutil` | **Correto com duas correções** | §8.3 |
-| 17 | "O resíduo é a memória de curto prazo do sistema" (§A, lado bom) | **Correto — já implementado aqui** | `docs/05` §3 (E5) e §4 (E6) |
+| 17 | "O resíduo é a memória de curto prazo do sistema" (§A, lado bom) | **Correto — já implementado aqui** | `docs/05` §5 (E5) e §6 (E6) |
 | 18 | Três próximos passos da §A (filtro de Landauer, modularização de τ, isomorfismo de resíduo) | **Já implementados** — não são próximos passos pendentes | `docs/05` §3–§5 |
+
+**Balanço das 18 afirmações: 8 confirmadas** (1, 2, 8, 14, 15, 16, 17, 18) ·
+**6 refutadas** (3, 5, 7, 10, 11, 12) · **4 parciais ou não verificáveis**
+(4, 6, 9, 13).
 
 ---
 

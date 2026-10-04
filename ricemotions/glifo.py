@@ -91,7 +91,8 @@ def codebook_up_to_isomorphism(d_min, seed=0):
 
     Por que existe: `decode_payload(..., perms=ALL_PERMS)` minimiza sobre (p, q).
     Se duas palavras do codebook são isomorfas, ambas atingem distância 0 para o
-    mesmo glifo e o desempate é arbitrário — medido: 0,27 em vez de ~1,0.
+    mesmo glifo e o desempate é arbitrário — medido: 0,146–0,208 em vez de ~1,0
+    (``docs/02`` A3, chave ``carga_permutacao``).
     """
     cand = shape_representatives()
     rng = np.random.default_rng(seed)

@@ -312,6 +312,7 @@
   "tau_criterio_sem_residuo": 0.7374999999999999,
   "tau_medio_fechado": 0.8278890715508396,
   "tau_medio_aberto": 0.7,
+  "tau_medio_landauer_off": 0.8046538600886118,
   "tau0": 0.7,
   "s_star_desvio_max_evento": 0.2535688725649222,
   "s_star_desvio_no_evento": 0.2497904564494442,
@@ -1317,7 +1318,7 @@
   "bits_de_chave": 16.609654901315086,
   "candidatos_testados": 3453,
   "chave_recuperada": 0.03452,
-  "segundos": 0.299,
+  "segundos": 0.282,
   "roundtrip_com_chave_exata": true,
   "observacao": "o documento chama isso de One-Time Pad; com <17 bits de chave a força bruta é trivial (docs/06 §6)"
  },

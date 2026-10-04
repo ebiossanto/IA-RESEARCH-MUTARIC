@@ -247,12 +247,13 @@ def e6_agencia(Ite, yte, tau0=0.7, passos=32, repouso=40, seed=1):
     X0 = np.full(NV, 0.5)
     Xa, Xf, Xo = X0.copy(), X0.copy(), X0.copy()
     hist = {k: [] for k in ("t", "T_fech", "T_abert", "T_semL", "tau_fech",
-                            "tau_abert", "S_fech", "S_abert")}
+                            "tau_abert", "tau_semL", "S_fech", "S_abert")}
     for t in range(passos):
         Xa = ab.passo(Xa, eventos[t]); Xf = fc.passo(Xf, eventos[t]); Xo = fo.passo(Xo, eventos[t])
         hist["t"].append(t); hist["T_fech"].append(float(Xf[1])); hist["T_abert"].append(float(Xa[1]))
         hist["T_semL"].append(float(Xo[1])); hist["tau_fech"].append(fc.tau)
-        hist["tau_abert"].append(ab.tau); hist["S_fech"].append(fc.s[1]); hist["S_abert"].append(ab.s[1])
+        hist["tau_abert"].append(ab.tau); hist["tau_semL"].append(fo.tau)
+        hist["S_fech"].append(fc.s[1]); hist["S_abert"].append(ab.s[1])
 
     # 3. critério: mesmo X, resíduo POR CANAL (é o vetor que diferencia os pesos)
     s_dev_evento = float(fc.s[1] - S_STAR[1])
@@ -269,6 +270,7 @@ def e6_agencia(Ite, yte, tau0=0.7, passos=32, repouso=40, seed=1):
         hist["t"].append(passos + t); hist["T_fech"].append(float(Xr[1]))
         hist["T_abert"].append(float(Xa[1])); hist["T_semL"].append(float(Xo[1]))
         hist["tau_fech"].append(fc.tau); hist["tau_abert"].append(ab.tau)
+        hist["tau_semL"].append(fo.tau)
         hist["S_fech"].append(fc.s[1]); hist["S_abert"].append(ab.s[1])
     s_dev_repouso = float(fc.s[1] - S_STAR[1])
 
@@ -301,6 +303,7 @@ def e6_agencia(Ite, yte, tau0=0.7, passos=32, repouso=40, seed=1):
         tau_criterio_com_residuo=float(tau_f), tau_criterio_sem_residuo=float(tau_fn),
         tau_medio_fechado=float(np.mean(hist["tau_fech"][:passos])),
         tau_medio_aberto=float(np.mean(hist["tau_abert"][:passos])),
+        tau_medio_landauer_off=float(np.mean(hist["tau_semL"][:passos])),
         tau0=tau0,
         s_star_desvio_max_evento=float(max(hist["S_fech"][:passos]) - S_STAR[1]),
         s_star_desvio_no_evento=s_dev_evento,

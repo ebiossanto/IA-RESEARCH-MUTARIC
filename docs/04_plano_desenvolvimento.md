@@ -10,10 +10,10 @@ para não virar lista infinita. Esforço estimado para uma pessoa, com o código
 | # | Tarefa | Pronto quando | status (04/10/2026) |
 |---|---|---|---|
 | P0.1 | `python run_all.py` roda limpo em Windows e Linux | testes + experimentos verdes em ambas as plataformas | **feito** — 27/27 testes |
-| P0.2 | `codebook_up_to_isomorfismo()` entra no E3 | `carga_permutacao` mostra `canonicalizado ≈ 1,0` e a curva `bits × σ` é regenerada; JSON e figura atualizados | **feito** — `carga_isomorfismo`: 0,208 → **1,000** limpo e sob permutação (`docs/05` §5) |
+| P0.2 | `codebook_up_to_isomorphism()` entra no E3 | `carga_permutacao` mostra `canonicalizado ≈ 1,0` e a curva `bits × σ` é regenerada; JSON e figura atualizados | **feito** — `carga_isomorfismo`: 0,208 → **1,000** limpo e sob permutação (`docs/05` §5) |
 | P0.3 | Decodificação **soft** do grafo (ponderar bit por `\|cos\| − τ`) | `6c_relacional` em σ=0,10 **> 0,6** (hoje 0,334 = chance), sem piorar o caso limpo | **feito** — `body_cont` + de-atenuação + pesos: σ=0,10 → **0,733** (limpo 0,919 → 0,892, ver `docs/05` §2.2) |
 | P0.4 | Curva acurácia × σ (hoje há pontos isolados) | gráfico com 6+ valores de σ para cada método | **feito** — 7 valores × 4 leitores, `figs/curva_sigma.png` |
-| P0.5 | CI mínima (GitHub Actions: `pip install -r requirements.txt && python tests/test_smoke.py`) | badge verde no README | **pendente** |
+| P0.5 | CI mínima (GitHub Actions: `pip install -r requirements.txt && python tests/test_smoke.py`) | badge verde no README | **feito** — `.github/workflows/ci.yml`, matriz Windows + Linux, 27/27 em ambas (04/10/2026) |
 
 > **Fechar a conta do A3/A2 antes de qualquer afirmação nova.** São os dois números
 > que mais enfraquecem o texto hoje.
@@ -21,7 +21,7 @@ para não virar lista infinita. Esforço estimado para uma pessoa, com o código
 
 ### Fechado neste ciclo (além do P0)
 
-`docs/05_residuo_e_agencia.md` entrega os quatro itens acima **e** os dois problemas
+`docs/05_residuo_e_agencia.md` entrega os cinco itens acima **e** os dois problemas
 conceituais abertos em `03`:
 
 | item | onde |
@@ -36,7 +36,8 @@ conceituais abertos em `03`:
 
 `docs/06_analise_mutacore.md` analisa o documento **`MUTACORE _ RIC.md`** anexado pelo
 usuário. Regra usada: **nada é aceito sem ser reproduzido numericamente**. Resultado:
-3 mecanismos incorporados, 6 alegações refutadas com prova.
+das 18 afirmações, 8 confirmadas, **6 refutadas**, 4 parciais ou não verificáveis —
+4 mecanismos novos entraram no código (7 entradas, `docs/06` §2).
 
 | item | onde |
 |---|---|
@@ -62,6 +63,7 @@ figura `figs/mutacore.png`; testes 21 → **27**.
 | P1.5 | Fixar âncoras e reduzir a busca canônica do corpo (24 perms. ou forma canônica verdadeira) | `permutacao_corpo` recupera > 0,85 (hoje 0,666) |
 | P1.6 | Documentar **graus de liberdade do pesquisador** (τ, `d_min`, janelas 8/8, `d_ref`, `α`, `β`, `noise`, distrator 30%, **γ do resíduo endógeno**, **`carga_hw`**) | lista numerada em `docs/` — mesma disciplina do TEOA `docs/05` |
 | P1.7 | Carga como canal: espalhamento por portadora + **decodificador** (ideia do MutaCore §F, recusada lá por não ser verificável — `docs/06` §8.5/§9) | `decode_payload` lê a camada espalhada e `carga_capacidade` não piora |
+| P1.8 | τ com **zona morta/histerese** (achado A2b de `docs/02` — pendência órfã, nunca entrou no plano) | o leitor duro sobe em σ=0,10 sem leitor robusto e não perde o caso limpo |
 
 ## P2 — Ligar o TEOA de verdade (2–4 semanas)
 
@@ -83,7 +85,8 @@ o relacional continuar pior, a conclusão é que a hipótese relacional **não s
 ## P3 — Publicar (contínuo)
 
 1. `README.en.md` já existe; manter sincronizado com o PT.
-2. Repositório GitHub (`.gitignore` e estrutura prontos) + link do PIXEL em `docs/03` §5.
+2. ~~Repositório GitHub~~ **feito** — `ebiossanto/IA-RESEARCH-MUTARIC` (privado,
+   `main`, CI verde). Falta: **link do PIXEL em `docs/03` §5**.
 3. Figuras com erro-padrão (hoje, um ponto por condição).
 4. Pré-registro das hipóteses **antes** de rodar a P1 (lição do TEOA `docs/03`/
    `docs/05`: resultados exploratórios não são evidência confirmatória).
@@ -98,7 +101,10 @@ o relacional continuar pior, a conclusão é que a hipótese relacional **não s
       robusto a ruído, curva acurácia × σ e carga isomórfica — `docs/05` §2 e §5.
 - [x] **Análise externa reproduzida com provas** (04/10/2026): documento MutaCore —
       o que é correto entrou no código, o que não é ficou refutado — `docs/06`, E7–E9.
-- [ ] `run_all.py` verde em CI. *(P0.5, pendente)*
+- [x] `run_all.py` verde em CI. *(P0.5, fechado 04/10/2026: GitHub Actions,
+      matriz Windows + Linux — o job roda `tests/test_smoke.py`)*
+- [x] Repositório GitHub publicado (`ebiossanto/IA-RESEARCH-MUTARIC`, privado,
+      `main` + CI) *(04/10/2026)*
 - [ ] Números do E1–E4 com IC e teste de hipótese.
 - [ ] Resultado nulo publicado com a mesma proeminência do resultado positivo.
 - [ ] Um experimento com `teoa.core` de verdade (P2.1).
