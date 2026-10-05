@@ -26,7 +26,7 @@ imagem, e a imagem é relida por um código que decodifica família, procedênci
 carga — com a pergunta constante: *isso é leitura relacional ou reconhecimento de
 um roteiro?* (`docs/02` A6).
 
-## 2. Cronologia — ciclos 0–9 em um dia (04/10/2026) e ciclo 10 (05/10/2026)
+## 2. Cronologia — ciclos 0–9 em um dia (04/10/2026) e ciclos 10–11 (05/10/2026)
 
 | ciclo | commit | o que mudou |
 |---|---|---|
@@ -40,7 +40,8 @@ um roteiro?* (`docs/02` A6).
 | **7** | `23572f4` | **ciclo MUTARIC ev 2** (`docs/10`): segunda auditoria externa executada e reproduzida (**58/58 números**) — **E10b** (controles fortes de memória, 24 bits, ID + OOD) portado com veredito nulo publicado (*o resíduo não vence memórias fortes*), limitação do comparador no `docs/09` §7.6, novas pendências **P1.10**/**P2.7**, testes 30 → **32**, figuras 9 → **10** |
 | **8** | — | **ciclo MUTARIC ev 3/4** (`docs/11`): terceira auditoria externa executada e reproduzida (**JSON idêntico, 0 diferenças em 129 números; 113/113 checagens**) — **E10d** (adversarial + atacante neural, 24 bits) portado com dois vereditos publicados (*o treinamento adversarial reduz reconstrução neural sem custo, mas perde para todos os controles fortes* — H4 refutada; e a **ressalva própria** de que os ataques lineares deles são degenerados — uint8), E10c/E10e **sem código** (não reproduzíveis), nova pendência **P1.11** + atualização de **P2.7**, testes 32 → **34**, figuras 10 → **11** |
 | **9** | — | **ciclo MUTARIC ev 5/6** (`docs/12`): quarta auditoria externa — zip **só com saídas, sem código** → **286/286 checagens aritméticas** (tabelas × JSON × CSV, fórmulas de P, Pareto recalculado, Welch/z do ev 6 recalculados com `scipy`) + **replicação NOSSA** `E10e_repl` executada **neste terminal** com as mesmas 200 sementes do ev 5 (163,6 s, pareada por semente) — vereditos: *Pareto ID deles **contido** no nosso; Pareto OOD exato **não repetido** (mesma prateleira P = 1); λ = 1 vaza mais **confirmado** com o pareado que o ev 6 não pôde fazer*; `docs/04` ganhou o **registro detalhado de erros, acertos e retomadas de caminho** (ciclos 0–9); testes 34 → **36**, figuras 11 → **12** |
-| **10** (atual) | — | **objetivo novo: sistema JEV-IA-MUTARIC** — material externo `_MUTARIC Jev.md` (fora do repo, mesma pasta das auditorias) analisado e adotado como **P4** no `docs/04`: Jev como **camada probabilística de decisão** sobre o estado MUTARIC (*LLM explica · Jev decide · MUTARIC regula*), contrato `MUTARIC Decision State`, experimento **`E11-JEV`** (4 condições πA–πD, 12 métricas, H1–H4 reescritos com IC pareada e ε declarado), **atacante semântico** (estende P1.11) e **calibração ECE/Brier** — **nenhuma alegação sobre o Jev verificada** (sem acesso ao modelo; as 7 recusas da §9 do documento viraram regra) e **nenhum número novo**: 36 testes, 12 figuras inalterados |
+| **10** | — | **objetivo novo: sistema JEV-IA-MUTARIC** — material externo `_MUTARIC Jev.md` (fora do repo, mesma pasta das auditorias) analisado e adotado como **P4** no `docs/04`: Jev como **camada probabilística de decisão** sobre o estado MUTARIC (*LLM explica · Jev decide · MUTARIC regula*), contrato `MUTARIC Decision State`, experimento **`E11-JEV`** (4 condições πA–πD, 12 métricas, H1–H4 reescritos com IC pareada e ε declarado), **atacante semântico** (estende P1.11) e **calibração ECE/Brier** — **nenhuma alegação sobre o Jev verificada** (sem acesso ao modelo; as 7 recusas da §9 do documento viraram regra) e **nenhum número novo**: 36 testes, 12 figuras inalterados |
+| **11** (atual) | — | **pacote `JEV_IA_MUTARIC_CONTINUIDADE.zip`** (6 arquivos, **sem código**) → `docs/13`: retrato do nosso projeto **conferido** (direções batem; **2 números desatualizados** — "27 testes"/"E1–E9"; **1 conclusão repetida sem a nossa ressalva** — a "indistinguibilidade" é o Welch do ev 6, test-dependent) e protocolo do P4 **fechado**: **6 condições C0–C5** (baseline + teto adversarial), H1–H4 rebased, **RDSP** (4 critérios, teorema **não provado** → P4.7), atacante semântico (8 alvos; **colisão de numeração** com o E12 do P2.7), `SafetyGate`/Supervisor, **λ=0,003 congelado**, 200 sementes novas, Holm — **lista de tarefas em `docs/13` §5**; nenhum número novo (36 testes, 12 figuras) |
 
 Linha do tempo interna (ciclos 1–3): as datas e o "antes/depois" de cada correção
 estão em `docs/01` §7, com a nota de cronologia sobre as correções do E5/E6.
@@ -129,6 +130,13 @@ com 139 grafos) e `demo_mensagem` ("Ganhei!", 11 glifos, 11/11 símbolos até σ
   (decisor local), atacante semântico (estende P1.11), calibração ECE/Brier —
   nenhuma alegação externa sobre o Jev verificada (sem acesso) e **nenhum
   número novo**.
+- **Ciclo 11 (05/10/2026):** pacote **`JEV_IA_MUTARIC_CONTINUIDADE.zip`**
+  (continuidade, arquitetura, contrato JSON, protocolo, backlog — **sem
+  código**) → `docs/13`: conferência do retrato do nosso projeto (2 números
+  desatualizados; a "indistinguibilidade" repetida continua test-dependent) e
+  protocolo do P4 **fechado** — C0–C5, RDSP, atacante semântico, λ=0,003
+  congelado, 200 sementes novas, Holm; **lista de tarefas em `docs/13` §5**.
+  Nenhum número novo (36 testes, 12 figuras).
 
 ## 4. Mudanças de direção
 
@@ -247,14 +255,14 @@ Os achados que **pioraram a própria história** e por isso estão publicados:
 ## 6. Estado atual e fila
 
 - **Repositório:** `github.com/ebiossanto/IA-RESEARCH-MUTARIC` (**público**, `main`);
-  CI verde em Windows e Ubuntu (36/36); histórico completo em `git log` (11 ciclos, §2).
+  CI verde em Windows e Ubuntu (36/36); histórico completo em `git log` (12 ciclos, §2).
 - **Código:** 6 módulos (`mundo`, `glifo`, `residuo`, `agente`, `homeostase`,
   `experimentos`) + `tests/` (36) + `run_all.py`.
 - **Saídas:** 12 figuras em `figs/`, `resultados/resultados.json` (determinístico;
   `E9.segundos` está declarado em `campos_nao_deterministicos` e varia entre
   máquinas), `resultados/maquina.json` + `resultados/telemetria_real.json`
   (coleta real, `deterministico: false`, nunca regressada).
-- **Documentos:** `docs/00` a `docs/12` (treze), `README.md` (PT) e `README.en.md`.
+- **Documentos:** `docs/00` a `docs/13` (catorze), `README.md` (PT) e `README.en.md`.
 - **Fila:** P1.1 baseline séria → P1.2 teste de hipótese → P1.3 transformações
   perceptivas → P1.4–P1.11 (novos: protocolo hierárquico, **controles fortes
   de memória no E10** e **atacante neural/temporal nos nossos estados**) →
@@ -262,9 +270,11 @@ Os achados que **pioraram a própria história** e por isso estão publicados:
   verdade → P2.3 loop de dois agentes → P2.6 (novo: agente sem evento externo)
   → P2.7 (E10c, resíduo preditivo com não reconstrução — já com penalidade
   adversarial, `docs/11` §5) →
-  P3 publicação → **P4** (objetivo novo 05/10/2026: sistema **JEV-IA-MUTARIC**,
-  experimento `E11-JEV` — `docs/04`). Pendências externas: repo PIXEL, licença,
-  acesso ao Jev (P4.3/P4.4 bloqueados sem ele).
+  P3 publicação → **P4** (sistema **JEV-IA-MUTARIC**, `docs/04`): Fase 0/1
+  **pronta para rodar** — contrato puro → mock → harness C0–C5 (lista em
+  `docs/13` §5); Fase 2 espera acesso ao Jev. Pendências externas: repo PIXEL,
+  licença, acesso ao Jev (P4.3/P4.4 bloqueados sem ele) e código do pacote
+  (hoje veio só documentação).
 - **Como retomar:** `docs/07_continuidade.md`.
 
 ## 7. Números publicados — mapa rápido das chaves
@@ -338,7 +348,16 @@ decides · MUTARIC regulates*) with the **`E11-JEV`** experiment (4 conditions,
 12 metrics, H1–H4 with paired-CI acceptance) adopted as **P4** in `docs/04`,
 including a semantic attacker (extending P1.11) and ECE/Brier calibration;
 **no claim about Jev was verified** (no access to the model) and its §9
-caveats became project rules.
+caveats became project rules. Cycle 11 (05/10/2026) received the package
+**`JEV_IA_MUTARIC_CONTINUIDADE.zip`** (6 files, **no code** → `docs/13`):
+their picture of our project **checked** (directions match; 2 stale numbers —
+"27 tests", "E1–E9"; 1 conclusion repeated without our test-dependent caveat)
+and the P4 protocol **frozen** — 6 conditions C0–C5 (deterministic baseline +
+raw-history adversarial ceiling), H1–H4 rebased, the **RDSP** notion (4
+criteria, target theorem explicitly unproven), the semantic attacker with 8
+pre-registered targets (numbering clash with E12/P2.7), `SafetyGate`/
+Supervisor, λ = 0,003 frozen, 200 new seeds, Holm correction. **Task list:
+`docs/13` §5.** No new numbers.
 
 **Studies (E1–E10 + E10b + E10d + E10e_repl plus the σ curve):** provenance in relations (0.919 vs 1.000
 baseline — the relational code does *not* win on accuracy, it wins on affine
@@ -381,7 +400,8 @@ loses to a trivial baseline" and two real bugs), mid-course redefinitions
 prominently as positive ones; no silent change to published numbers; I/O and
 telemetry outside the core; acceptance criteria for every item).
 
-**Now:** 36 tests, 13 documents, 12 figures, CI green; the queue is P1
+**Now:** 36 tests, 14 documents, 12 figures, CI green; two independent lanes —
+the new JEV Fase 0/1 (`docs/13` §5) and the existing P1
 (baselines + bootstrap CIs + perceptual transformations, plus the new P1.9
 hierarchical protocol, P1.10 strong memory controls and P1.11 neural/temporal
 attackers against our own states) then P2 (the real TEOA core, plus P2.6/P2.7 —

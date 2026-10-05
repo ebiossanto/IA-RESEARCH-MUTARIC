@@ -140,14 +140,17 @@ por item. A ordem recomendada para retomar:
 > por semente** como exigência explícita.
 >
 > **Objetivo novo (05/10/2026, sem números):** o material externo
-> `_MUTARIC Jev.md` propõe o **sistema JEV-IA-MUTARIC** — o Jev como camada
-> probabilística de decisão sobre o estado MUTARIC (*LLM explica · Jev decide ·
-> MUTARIC regula*) — e o experimento **`E11-JEV`** (4 condições πA–πD, 12
-> métricas, H1–H4). Adotado como **P4** em `docs/04`: contrato puro
-> `decision_state()`, harness rodando sem Jev (decisor local), atacante
-> semântico (estende a P1.11) e calibração ECE/Brier — **nenhuma alegação sobre
-> o Jev está verificada** (sem acesso ao modelo; as 7 recusas da §9 do
-> documento viraram regra do projeto).
+> `_MUTARIC Jev.md` **e o pacote `JEV_IA_MUTARIC_CONTINUIDADE.zip`** (ciclo 11,
+> analisados em `docs/13`) propõem o **sistema JEV-IA-MUTARIC** — o Jev como
+> camada probabilística de decisão sobre o estado MUTARIC (*LLM explica · Jev
+> decide · MUTARIC regula · Supervisor limita*) — com o experimento
+> **`E11-JEV`** fechado em **6 condições C0–C5**, 23 métricas e H1–H4.
+> Adotado como **P4** em `docs/04`: contrato puro `decision_state()` (schema
+> `jev-mutaric-1.0`), harness **sem Jev** (`MockJevProvider`, **λ=0,003
+> congelado**, 200 sementes novas), atacante semântico (estende a P1.11),
+> calibração ECE/Brier e formalização do **RDSP** (P4.7) — **nenhuma alegação
+> sobre o Jev está verificada** (sem acesso ao modelo; as 7 recusas da §9 do
+> `_MUTARIC Jev.md` viraram regra do projeto). **Lista de tarefas: `docs/13` §5.**
 
 ## 5. Pendências que vivem fora deste repositório
 
@@ -161,6 +164,7 @@ por item. A ordem recomendada para retomar:
 | Documento `MUTARIC ev 3 e 4.md` + `MUTARIC_E10d.zip` | fora do repo (pasta `IA-RESEARCH-MUTARIC-main/` no Desktop) | já analisado em `docs/11` (E10d portado, JSON idêntico); E10c ficou **não reproduzível** — só reabrir se chegar o código deles |
 | `MUTARIC ev 5.md` + `MUTARIC ev 6.md` + `MUTARIC_E10e_200_SEMENTES.zip` | fora do repo (mesma pasta `IA-RESEARCH-MUTARIC-main/`) | já analisado em `docs/12` (286/286 + réplica `E10e_repl` aqui); o zip **não tem código** — se chegar o `e10e.py` deles, executar e cruzar com o JSON (a checagem aritmética inteira vira reprodução de verdade) |
 | `_MUTARIC Jev.md` | fora do repo (mesma pasta `IA-RESEARCH-MUTARIC-main/`) | já adotado como **objetivo P4 — sistema JEV-IA-MUTARIC** (`docs/04`, 05/10/2026); reabrir quando houver **acesso ao Jev** — aí P4.3 (adaptador) e P4.4 (verificação das alegações) deixam de estar bloqueados |
+| `JEV_IA_MUTARIC_CONTINUIDADE.zip` | fora do repo (em `Downloads\`) | analisado em `docs/13` (ciclo 11): retrato do nosso projeto conferido, protocolo `E11-JEV` **fechado** (6 condições C0–C5, λ=0,003 congelado, 200 sementes novas, Holm), **RDSP** e atacante semântico — **veio sem código**; se chegar código (`mock`/`e11_jev.py`), executar e cruzar |
 | Licença do repositório | não definida | decidir antes de tornar público |
 
 ## 6. Checklist para adicionar um experimento (E11) sem quebrar nada
@@ -221,14 +225,19 @@ paired per seed): the ID Pareto of theirs is contained in ours, **the exact
 OOD Pareto did not repeat** (same structure, different point — published
 with the same prominence), and λ = 1's larger leakage was confirmed with
 the paired per-seed test ev 6 could not run. On 05/10/2026 a **new objective**
-was registered without new numbers: the **JEV-IA-MUTARIC system** from the
-external `_MUTARIC Jev.md` — Jev as a probabilistic decision layer over the
-MUTARIC state (*LLM explains · Jev decides · MUTARIC regulates*) with the
-**`E11-JEV`** experiment (4 conditions, 12 metrics, H1–H4) adopted as **P4** in
-`docs/04` (pure `decision_state()` contract, harness running without Jev,
-semantic attacker extending P1.11, ECE/Brier calibration; **no claim about Jev
-verified** — no access to the model, and the document's §9 caveats became
-project rules). The next
+was registered without new numbers: the **JEV-IA-MUTARIC system** (external
+`_MUTARIC Jev.md` **plus the package `JEV_IA_MUTARIC_CONTINUIDADE.zip`** — 6
+files, **no code**, analysed in `docs/13` = cycle 11, which checked their
+picture of our project: 2 stale numbers and 1 conclusion repeated without our
+test-dependent caveat). Jev is a probabilistic decision layer over the MUTARIC
+state (*LLM explains · Jev decides · MUTARIC regulates · Supervisor limits*)
+and **`E11-JEV`** is now frozen at **6 conditions C0–C5**, 23 metrics, H1–H4,
+adopted as **P4** in `docs/04` (pure `decision_state()` contract
+`jev-mutaric-1.0`, harness running without Jev — mock provider, λ = 0,003
+frozen, 200 new seeds —, semantic attacker extending P1.11, ECE/Brier
+calibration, RDSP formalization; **no claim about Jev verified** — no access
+to the model, and the §9 caveats became project rules). Task list: `docs/13`
+§5. The next
 concrete step is still **P1.1** (serious baselines with bootstrap CIs), then
 P1.2 (paired hypothesis test) and P1.3 (perceptual transformations); P0.1–P0.5
 are closed. External pendencies live outside this repo: the PIXEL repository

@@ -45,7 +45,7 @@ ricemotions/
   homeostase.py              MutaCore: endogenous residue, telemetry → S*/τ, policy
   experimentos.py            E1–E10 + E10b + E10d + E10e_repl, figures, the only module with I/O
 tests/test_smoke.py          contracts + regression of published numbers (36)
-docs/                        13 documents: index · architecture · findings · bridge · roadmap · residue/agency · MutaCore · continuity · history · MUTARIC ev, ev 2, ev 3/4 and ev 5/6 audits
+docs/                        14 documents: index · architecture · findings · bridge · roadmap · residue/agency · MutaCore · continuity · history · MUTARIC ev, ev 2, ev 3/4, ev 5/6 audits · JEV-IA-MUTARIC package
 figs/  resultados/           generated figures and resultados/resultados.json
                              (+ maquina.json and telemetria_real.json: real machine
                              collection, non-deterministic, never regressed)
@@ -322,14 +322,18 @@ synthetic external events) and **P2.7** (E10c, predictive residue with
 non-reconstruction — now specified with an **adversarial** penalty after the
 linear version came out null in the external E10c).
 
-**New objective (2026-10-05):** the external `_MUTARIC Jev.md` proposes the
-**JEV-IA-MUTARIC system** — Jev (TypeSafe AI's structured-decision model) as a
-probabilistic evaluation layer on top of the MUTARIC state, in the division
-*LLM explains · Jev decides · MUTARIC regulates*, with the **`E11-JEV`**
-experiment (4 conditions, 12 metrics, H1–H4). Registered as **P4** in `docs/04`
-(pure contract, harness running without Jev, semantic attacker extending
-P1.11, ECE/Brier calibration) — **no claim about Jev is verified**: no access
-to the model, and the document's §9 caveats became project rules.
+**New objective (2026-10-05):** the external `_MUTARIC Jev.md` **plus the
+package `JEV_IA_MUTARIC_CONTINUIDADE.zip`** (6 files, **no code** — analysed in
+`docs/13`, cycle 11) propose the **JEV-IA-MUTARIC system** — Jev (TypeSafe
+AI's structured-decision model) as a probabilistic evaluation layer on top of
+the MUTARIC state, in the division *LLM explains · Jev decides · MUTARIC
+regulates · Supervisor limits*, with the **`E11-JEV`** experiment frozen at
+**6 conditions C0–C5**, 23 metrics, H1–H4 (λ = 0,003 frozen, 200 new seeds).
+Registered as **P4** in `docs/04` (pure contract `jev-mutaric-1.0`, harness
+running without Jev on a deterministic `MockJevProvider`, semantic attacker
+extending P1.11, ECE/Brier calibration, RDSP formalization) — **no claim about
+Jev is verified**: no access to the model, and the §9 caveats became project
+rules. **Task list / next steps: `docs/13` §5.**
 
 How to resume: `docs/07_continuidade.md`.
 

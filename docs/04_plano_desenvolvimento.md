@@ -110,11 +110,13 @@ ambiente → MUTARIC → Jev → ação → consequência → MUTARIC
 homeostase e continuidade temporal**, e o **Jev** (modelo de decisão estruturada
 anunciado pela TypeSafe AI em 09/2026) entra como **camada probabilística de
 avaliação e decisão**: recebe um estado tipado e devolve escolha/probabilidades
-com confiança. Divisão proposta no documento e adotada aqui:
-***LLM explica · Jev decide · MUTARIC regula***.
+com confiança. Divisão proposta no material e adotada aqui — agora de **4 vias**
+(ciclo 11): ***LLM explica · Jev decide · MUTARIC regula · Supervisor limita***.
 
-Fonte: material externo **`_MUTARIC Jev.md`** (fora do repositório, mesma pasta
-das auditorias; analisado em 05/10/2026). **Nada sobre o Jev está verificado** —
+Fonte: material externo **`_MUTARIC Jev.md`** e o **pacote
+`JEV_IA_MUTARIC_CONTINUIDADE.zip`** (6 arquivos, **sem código**; fora do
+repositório, mesma pasta das auditorias; analisados em 05/10/2026 — o pacote em
+`docs/13`). **Nada sobre o Jev está verificado** —
 lançamento, "System One Models", "sem alucinação" e calibração vêm só de
 noticiário, sem código e sem acesso ao modelo neste terminal. A regra do projeto
 continua a mesma: afirmação externa só entra com reprodução numérica — aqui entra
@@ -128,30 +130,31 @@ inalterados).
 |---|---|---|
 | **Camada 1 — estado MUTARIC** | `Z_t = [X_t, S*_t, R_t, h_t, τ_t, ΔX_t]`: continuidade temporal, histórico comprimido, erro homeostático, consequências, privacidade do conteúdo | núcleo atual (`mundo`/`residuo`/`homeostase`) — já existe |
 | **Camada 2 — Jev avaliador** | `p_t(a) = Jev(a \| Z_t, O_t, G_t)` sobre ações delimitadas (`agir · observar · recuperar · pedir_revisao`) | contrato **P4.1** + adaptador **P4.3** |
-| **Camada 3 — política modulada** | `p̃_t(a) ∝ p_t(a)·exp[−β(R_t)·C(a) + γ·V(a)]`: o resíduo **modula** o uso da avaliação, não a substitui | harness **P4.2** |
-| **Contrato `MUTARIC Decision State`** | JSON de entrada (observação + estado interno + resíduo + histórico comprimido + ações permitidas) e resposta tipada (ação, probabilidades, confiança, risco) | **P4.1**, função pura |
+| **Camada 3 — política modulada** | `p̃_t(a) ∝ p_t(a)·exp[−β(R_t)·C(a) + γ·V(a) − η·U_t(a)]` (o termo de incerteza `−η·U` veio no pacote): o resíduo **modula** o uso da avaliação, não a substitui; depois o **`SafetyGate`** aplica `Gate(p̃, A_permitida, risco, confiança)` | harness **P4.2** |
+| **Contrato `MUTARIC Decision State`** | JSON de entrada (observação + estado interno + resíduo + histórico comprimido + ações permitidas) e resposta tipada (ação, probabilidades, confiança, risco) — schema versionado **`jev-mutaric-1.0`** (JSON Schema 2020-12, `additionalProperties: false`) | **P4.1**, função pura |
 | **Papéis do Jev** | (1) motor de decisão condicionado; (2) **atacante semântico** do conteúdo apagado; (3) sonda externa do estado regulatório; (4) **calibrador** da incerteza (ECE/Brier) | **P4.2–P4.6** |
-| **Experimento `E11-JEV`** | 4 condições: `πA` (só observação), `πB` (+estado), `πC` (+resíduo e memória), `πD` (+resíduo treinado com não-reconstrução) — 12 métricas, H1–H4 | **P4.2** |
+| **Experimento `E11-JEV`** | **6 condições `C0–C5`** (`docs/13` §3.2): `C0` determinística (baseline), `C1` só observação, `C2` +estado, `C3` +resíduo bruto, `C4` +resíduo privado `R̃` (λ=0,003), `C5` +histórico integral (**teto adversarial**, nunca em produção) — 23 métricas (7 utilidade + 4 calibração + 7 privacidade + 5 segurança), H1–H4, saída **por semente** | **P4.2** |
 
 ### Itens com critério de aceite
 
 | # | Tarefa | Pronto quando |
 |---|---|---|
-| P4.1 | **Contrato `MUTARIC Decision State` como função pura** no núcleo (estado interno → JSON tipado), sem nenhuma chamada externa | `decision_state()` roda na suíte: mesmos `float64` ⇒ mesmo contrato, byte a byte |
-| P4.2 | **Harness do `E11-JEV` sem Jev**: as 4 condições πA–πD com um decisor local (política probabilística determinística) e o `R̃` do caminho E10d/P2.7 | πA–πD rodam neste terminal com sementes fixas, IC pareada por semente, H1–H4 calculados e regressados em `resultados.json` |
+| P4.1 | **Contrato `MUTARIC Decision State` como função pura** no núcleo (estado interno → JSON tipado), validando o schema `jev-mutaric-1.0` (validação embutida, **sem nova dependência**), sem nenhuma chamada externa | `decision_state()` roda na suíte: mesmos `float64` ⇒ mesmo contrato, byte a byte |
+| P4.2 | **Harness do `E11-JEV` sem Jev**: as 6 condições `C0–C5` com `MockJevProvider` + `PolicyModulator` (β, γ, η) + `SafetyGate` determinísticos, e o `R̃` em **λ = 0,003 congelado** (cumpre P3.4) do caminho E10d/E10e | C0–C5 rodam neste terminal com **200 sementes novas** (fora de 70000–70199), saída por semente, IC pareada + permutação + **Holm**, Brier/ECE, H1–H4 calculados e regressados em `resultados.json` |
 | P4.3 | **Adaptador Jev** (quando houver acesso): I/O **só** em `experimentos.py`, saída em arquivo próprio **declarado não-determinista** (mesma disciplina da telemetria, `docs/06` §9) — nunca na regressão | execução real publicada **com a origem marcada**; nenhum teste da suíte depende de rede |
 | P4.4 | **Verificação independente das alegações sobre o Jev** (ECE/Brier medidos aqui; alegação de "sem alucinação" testada) | números nossos com protocolo; item **bloqueado** enquanto não houver acesso — até lá nenhuma alegação citada como fato |
-| P4.5 | **Atacante semântico**: receber o resíduo e responder canal de origem, sinal do evento, tipo de falha (falha/ameaça/conflito/ausência), objetivo afetado, sequência causal | acurácia ≈ acaso **com IC contra 50%**; se passar, o vazamento semântico é publicado como achado (estende a **P1.11**) |
-| P4.6 | **Calibração sob tensão/resíduo/OOD**: ECE e Brier por condição e regime | tabela ECE/Brier × condição × regime; H4 com IC |
+| P4.5 | **Atacante semântico** (base do futuro E12, `docs/13` §3.4): 8 alvos **pré-registrados** (sinal, canal afetado, causa, objetivo, ordem temporal, gravidade, conflito, identidade) × 5 entradas (estado; resíduo bruto; resíduo privado; sequência; histórico integral como **teto positivo**) | acurácia ≈ acaso **com IC** e limite pré-registrado; conclusão só relativa (*"nenhum atacante testado passou"*) — nunca *"eliminado matematicamente"* (estende a **P1.11**) |
+| P4.6 | **Calibração sob tensão/resíduo/OOD**: ECE, Brier e **diagrama de confiabilidade** por condição e regime | tabela ECE/Brier × condição × regime; H4 com IC |
+| P4.7 | **Formalizar o RDSP** (Resíduo Decisório Suficiente e Privado, `docs/13` §3.1): definição + 4 critérios — `I(R;Y)>0`, `sup_a Adv ≤ ε`, `J(π(O,R)) ≥ J(π(O,H))−δ`, `bits(R) ≤ B` | texto nos docs com o **teorema-alvo explicitamente marcado como não provado** — meta de formalização, nunca resultado |
 
 ### Hipóteses do `E11-JEV` (aceite, com a disciplina do projeto)
 
 | H | enunciado do documento | nosso critério |
 |---|---|---|
-| H1 | `J(πC) > J(πA)` | IC bootstrap **pareada por semente** (P1.9); se incluir 0 → **nulo** |
-| H2 | `J(πD) ≈ J(πC)` | "≈" exige **margem ε fixada antes** — "não deu significativo" não é equivalência |
-| H3 | `Reconstrução(R̃) < Reconstrução(R)` | medida pelo **atacante de P1.11** (neural/temporal), não só por limiar linear — lição do E10d |
-| H4 | `ECE(πD) ≤ ECE(πA)` | ECE/Brier calculados aqui, λ fixado antes (P3.4) |
+| H1 | `J(C3) > J(C1)` | IC bootstrap **pareada por semente** (P1.9); se incluir 0 → **nulo** |
+| H2 | `J(C4) ≈ J(C3)` | "≈" exige **margem ε fixada antes** — "não deu significativo" não é equivalência |
+| H3 | `Recon(C4) < Recon(C3)` | medida pelo **atacante de P1.11** (neural/temporal), não só por limiar linear — lição do E10d |
+| H4 | `ECE(C4) ≤ ECE(C1)` | ECE/Brier calculados aqui; **λ = 0,003 congelado antes** do teste (P3.4) |
 
 ### Limites do documento (§9) — adotados como regras deste objetivo
 
@@ -163,11 +166,12 @@ independente. Somados aos nossos: núcleo continua determinístico (P4.3), λ an
 do teste (P3.4), pareado por semente (P1.9) e resultado nulo publicado com a
 mesma proemência.
 
-> **Numeração:** o documento chama o experimento de **`E11-JEV`**, mas **E11 já
-> está reservado** (E10 com política aprendida, `docs/09` §8) e **E12** é
-> candidato do P2.7 (`docs/11` §7). Até decisão registrada em "decisões
-> pendentes", mantém-se o nome do documento **`E11-JEV`** — sem renumerar o que
-> já está publicado.
+> **Numeração:** o material chama o experimento de **`E11-JEV`**, mas **E11 já
+> está reservado** (E10 com política aprendida, `docs/09` §8) e **E12** agora é
+> reivindicado **duas vezes**: candidato do **P2.7** (`docs/11` §7) **e**
+> atacante semântico do pacote (`docs/13` §3.4). Até decisão registrada em
+> "decisões pendentes", mantém-se **`E11-JEV`** e o atacante semântico é
+> referido pelo item (**P4.5**) — sem renumerar o que já está publicado.
 
 ---
 
@@ -223,9 +227,10 @@ mesma proemência.
       métrica de reatividade está listada em `docs/05` §7.5; as escolhas de
       `k_t`, `k_tau`, `k_relax`, `β` e `J` ainda não)*
 - [ ] **Sistema JEV-IA-MUTARIC (P4, objetivo novo 05/10/2026)**: contrato puro
-      `decision_state()`, harness `E11-JEV` (πA–πD) rodando aqui com IC pareada
-      e H1–H4 — e, quando houver acesso ao Jev, adaptador fora da regressão +
-      verificação independente das alegações (`_MUTARIC Jev.md`).
+      `decision_state()` (`jev-mutaric-1.0`), harness `E11-JEV` (C0–C5, 200
+      sementes novas, λ=0,003 congelado) rodando aqui com IC pareada e H1–H4 —
+      e, quando houver acesso ao Jev, adaptador fora da regressão +
+      verificação independente das alegações (lista completa em `docs/13` §5).
 
 ## Registro de erros, acertos e retomadas de caminho (ciclos 0–9)
 
@@ -311,5 +316,7 @@ motivo. Serviço de memória para quem continuar o trabalho.
 | Manter `read_family_relational` como métrica? | sim/não | só como **sanidade** (docs/02 A4) |
 | Centralização da feature (ruptura com o RIC original) | manter/reverter | manter — sem ela o grafo colapsa; documentar como decisão de projeto |
 | Idioma dos gráficos | PT / EN | PT aqui, EN no README para o GitHub |
-| Nome do experimento do Jev: manter **`E11-JEV`** ou renumerar? | `E11-JEV` (nome do documento) × E13 (E11 = política aprendida já publicada; E12 = candidato do P2.7) | manter `E11-JEV` enquanto não há código — não renumerar o que já está publicado |
-| Acesso ao Jev (API/modelo) | hoje **inexistente** neste terminal | P4.2 usa decisor local determinístico; P4.4 fica **bloqueado** — e nenhuma alegação sobre o Jev vira fato sem número nosso |
+| Nome do experimento do Jev: manter **`E11-JEV`** ou renumerar? | `E11-JEV` (nome do material) × E13 (E11 = política aprendida já publicada; E12 = candidato do P2.7) | manter `E11-JEV` enquanto não há código — não renumerar o que já está publicado |
+| **E12 duplicado:** atacante semântico do pacote × candidato do P2.7 | dois experimentos disputam o mesmo número (`docs/13` §3.4) | decidir na implementação; **recomendação:** atacante semântico = `E12` (protocolo pronto) e o P2.7 vira `E13` — até lá referir por item (P4.5 / P2.7) |
+| Faixa das 200 sementes do `E11-JEV` | precisa ficar **fora** de 70000–70199 (ev 5 / E10e_repl) | definir faixa nova e registrá-la **antes** de rodar (semente nunca observada) |
+| Acesso ao Jev (API/modelo) | hoje **inexistente** neste terminal | P4.2 usa `MockJevProvider` determinístico; P4.4 fica **bloqueado** — e nenhuma alegação sobre o Jev vira fato sem número nosso |

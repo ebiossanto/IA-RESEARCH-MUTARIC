@@ -50,6 +50,10 @@ tentam recuperar **família afetiva, procedência e uma carga explícita de 5,36
 12. `docs/12_analise_mutaric_ev5_ev6.md` — quarta auditoria **MUTARIC ev 5/6**:
     zip **sem código** → **286/286 checagens aritméticas** + a réplica
     **E10e_repl** (200 sementes deles, pareada por semente) aqui.
+13. `docs/13_analise_pacote_jev_continuidade.md` — pacote **JEV–IA–MUTARIC
+    Continuidade** (6 arquivos, sem código): retrato do nosso projeto
+    **conferido**, protocolo **`E11-JEV`** fechado (6 condições C0–C5, RDSP,
+    λ=0,003) e a **lista de tarefas** da pista JEV.
 
 ## Rodar
 
@@ -78,7 +82,7 @@ ricemotions/                pacote importável
   homeostase.py             MutaCore: resíduo endógeno, S*/τ por telemetria, política
   experimentos.py           E1-E10, E10b, E10d, E10e_repl, figuras, único lugar com I/O
 tests/test_smoke.py         sanidade + regressão dos números publicados (36)
-docs/                       13 documentos (índice, arquitetura, análise, ponte, plano, resíduo/agência, MutaCore, continuidade, histórico, auditorias MUTARIC ev, ev 2, ev 3/4 e ev 5/6)
+docs/                       14 documentos (índice, arquitetura, análise, ponte, plano, resíduo/agência, MutaCore, continuidade, histórico, auditorias MUTARIC ev, ev 2, ev 3/4, ev 5/6 e pacote JEV-IA-MUTARIC)
 figs/                       figuras geradas
 resultados/                 resultados.json (regenerável) + maquina.json e
                             telemetria_real.json (coleta real, não regressada)
@@ -313,14 +317,18 @@ nossos estados — da auditoria ev 3/4). Depois **P2.1**, trocar `mundo.episode(
 **P2.7** (E10c: resíduo preditivo com não reconstrução — já com penalidade
 adversarial, após a versão linear dar nulo no E10c externo).
 
-**Objetivo novo (05/10/2026):** o material externo `_MUTARIC Jev.md` propõe o
-**sistema JEV-IA-MUTARIC** — o Jev (modelo de decisão estruturada) como camada
-probabilística sobre o estado MUTARIC, na divisão *LLM explica · Jev decide ·
-MUTARIC regula*, com o experimento **`E11-JEV`** (4 condições, 12 métricas,
-H1–H4). Registrado como **P4** em `docs/04` (contrato puro, harness sem Jev,
-atacante semântico, calibração ECE/Brier) — **nenhuma alegação sobre o Jev
-verificada**: sem acesso ao modelo, e as ressalvas da §9 do documento viraram
-regras do projeto.
+**Objetivo novo (05/10/2026):** o material externo `_MUTARIC Jev.md` e o
+pacote **`JEV_IA_MUTARIC_CONTINUIDADE.zip`** (analisado em `docs/13`, ciclo 11)
+propõem o **sistema JEV-IA-MUTARIC** — o Jev (modelo de decisão estruturada)
+como camada probabilística sobre o estado MUTARIC, na divisão *LLM explica ·
+Jev decide · MUTARIC regula · Supervisor limita*, com o experimento
+**`E11-JEV`** fechado em **6 condições C0–C5**, 23 métricas e H1–H4 (λ=0,003
+congelado, 200 sementes novas). Registrado como **P4** em `docs/04` (contrato
+puro `jev-mutaric-1.0`, harness sem Jev sobre `MockJevProvider`, atacante
+semântico, calibração ECE/Brier, formalização do RDSP) — **nenhuma alegação
+sobre o Jev verificada**: sem acesso ao modelo, e as ressalvas da §9 do
+`_MUTARIC Jev.md` viraram regras do projeto. **Lista de tarefas e próximos
+passos: `docs/13` §5.**
 Como retomar: `docs/07`.
 
 ---

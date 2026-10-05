@@ -17,6 +17,7 @@ Ponto de entrada do repositório. Todo o resto está em `README.md` (PT) e
 | `10_analise_mutaric_ev2.md` | Auditoria externa MUTARIC ev 2: E10b executado e reproduzido (58/58) — o resíduo **não vence** memórias fortes de igual orçamento | Para o ciclo 7 de verificação externa |
 | `11_analise_mutaric_ev3_ev4.md` | Auditoria externa MUTARIC ev 3/4: E10d executado e reproduzido (113/113 checagens, JSON idêntico) — adversarial reduz vazamento neural mas **perde** para os controles; E10c/E10e sem código | Para o ciclo 8 de verificação externa |
 | `12_analise_mutaric_ev5_ev6.md` | Auditorias externas MUTARIC ev 5/6: 286/286 checagens aritméticas (zip sem código) + **E10e_repl** — nossa replicação do protocolo Pareto com as mesmas 200 sementes, pareada por semente | Para o ciclo 9 de verificação externa |
+| `13_analise_pacote_jev_continuidade.md` | Pacote externo "JEV–IA–MUTARIC Continuidade" (6 arquivos, sem código): retrato do nosso projeto conferido (2 números desatualizados + 1 conclusão sem a nossa ressalva), **RDSP**, condições **C0–C5**, atacante semântico, contrato `jev-mutaric-1.0` — e a **lista de tarefas** da pista JEV | Para o ciclo 11 e a fila do P4 |
 
 ## Ordem de leitura
 
@@ -25,6 +26,7 @@ Ponto de entrada do repositório. Todo o resto está em `README.md` (PT) e
 - **2 horas:** + `02` (achados e limitações), `06` (provas do ciclo MutaCore),
   `09` (provas do ciclo MUTARIC ev), `10` (provas do ciclo MUTARIC ev 2),
   `11` (provas do ciclo MUTARIC ev 3/4), `12` (provas do ciclo MUTARIC ev 5/6),
+  `13` (pacote JEV–IA–MUTARIC e a fila do P4),
   `05` (mecanismos), `01` (contrato), `03` (ponte), `08` (histórico).
 
 ## Onde vivem as coisas
