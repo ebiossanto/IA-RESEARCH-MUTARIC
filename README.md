@@ -12,9 +12,11 @@ tentam recuperar **família afetiva, procedência e uma carga explícita de 5,36
 
 > **Status: protótipo exploratório.** Os seis experimentos principais (E1–E6),
 > os três de verificação externa (E7–E9, do documento MutaCore), o **E10**
-> (paridade de orçamento, da auditoria MUTARIC ev) e o **E10b** (controles
-> fortes de memória, da auditoria MUTARIC ev 2) rodam, são determinísticos e
-> têm **32 testes** — mas os números do E1–E4 vêm de um mundo
+> (paridade de orçamento, da auditoria MUTARIC ev), o **E10b** (controles
+> fortes de memória, da auditoria MUTARIC ev 2) e o **E10d** (treinamento
+> adversarial + atacante neural, da auditoria MUTARIC ev 3/4) e o **E10e_repl**
+> (réplica nossa do protocolo de Pareto, das auditorias MUTARIC ev 5/6) rodam, são
+> determinísticos e têm **36 testes** — mas os números do E1–E4 vêm de um mundo
 > **roteirizado** (`mundo.py` escreve as procedências à mão) e de um leitor que
 > **relê o que foi gravado literalmente**. Leia `docs/02_analise_achados.md` antes de
 > citar qualquer número; ele lista o que os resultados **não** sustentam.
@@ -42,18 +44,24 @@ tentam recuperar **família afetiva, procedência e uma carga explícita de 5,36
 10. `docs/10_analise_mutaric_ev2.md` — segunda auditoria **MUTARIC ev 2**:
     o `e10b.py` deles executado aqui (**58/58 números reproduzidos**) e o
     **E10b** — o resíduo **não vence** memórias fortes de igual orçamento.
+11. `docs/11_analise_mutaric_ev3_ev4.md` — terceira auditoria **MUTARIC ev 3/4**:
+    o `e10d.py` deles executado aqui (**JSON idêntico, 113/113 checagens**) e o
+    **E10d** — adversarial reduz vazamento neural, mas **perde** para os controles.
+12. `docs/12_analise_mutaric_ev5_ev6.md` — quarta auditoria **MUTARIC ev 5/6**:
+    zip **sem código** → **286/286 checagens aritméticas** + a réplica
+    **E10e_repl** (200 sementes deles, pareada por semente) aqui.
 
 ## Rodar
 
 ```bash
 pip install -r requirements.txt
-python run_all.py --so-testes    # 32 testes de sanidade (segundos)
-python run_all.py                # testes + E1-E10 + E10b + figuras (alguns minutos)
+python run_all.py --so-testes    # 36 testes de sanidade (segundos)
+python run_all.py                # testes + E1-E10 + E10b + E10d + E10e_repl + figuras (~15 min)
 python -m ricemotions.experimentos --telemetria   # coleta REAL da máquina (opcional,
                                                   # requer psutil; não regressada)
 ```
 
-Saídas: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore,e10_orcamento,e10b_controles}.png`
+Saídas: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore,e10_orcamento,e10b_controles,e10d_controles,e10e_repl}.png`
 e `resultados/resultados.json`; a coleta opcional grava `resultados/maquina.json` e
 `resultados/telemetria_real.json` (não determinísticos). No Windows `python` (não `python3`).
 
@@ -68,9 +76,9 @@ ricemotions/                pacote importável
   residuo.py                E5: geração, roteamento (banda/simetria), Landauer, τ
   agente.py                 E6: transição + mão dupla (S*, w, τ realimentados)
   homeostase.py             MutaCore: resíduo endógeno, S*/τ por telemetria, política
-  experimentos.py           E1-E10, E10b, figuras, único lugar com I/O
-tests/test_smoke.py         sanidade + regressão dos números publicados (32)
-docs/                       11 documentos (índice, arquitetura, análise, ponte, plano, resíduo/agência, MutaCore, continuidade, histórico, auditorias MUTARIC ev e ev 2)
+  experimentos.py           E1-E10, E10b, E10d, E10e_repl, figuras, único lugar com I/O
+tests/test_smoke.py         sanidade + regressão dos números publicados (36)
+docs/                       13 documentos (índice, arquitetura, análise, ponte, plano, resíduo/agência, MutaCore, continuidade, histórico, auditorias MUTARIC ev, ev 2, ev 3/4 e ev 5/6)
 figs/                       figuras geradas
 resultados/                 resultados.json (regenerável) + maquina.json e
                             telemetria_real.json (coleta real, não regressada)
@@ -211,6 +219,69 @@ nosso ambiente do E10) e **P2.7** (E10c, resíduo preditivo com não
 reconstrução). A parte 1 do documento (`e10.py`, testes deles) **não foi
 fornecida** e fica declarada como não verificável.
 
+## Auditoria externa MUTARIC ev 3/4 (04/10/2026 — `docs/11`)
+
+Quarta verificação externa, mesma regra — o `e10d.py` anexado **rodou aqui**
+e regenerou o JSON publicado **idêntico (0 diferenças em 129 números)**;
+as tabelas do documento passaram em **113/113 checagens**; o código foi
+portado como **E10d** (`E10d_controles`, 2 testes novos). Os experimentos
+**E10c** e **E10e** vieram **sem código** e ficam não reproduzíveis por
+execução (só checagem aritmética interna).
+
+O E10d responde *o treinamento adversarial reduz a reconstrução neural sem
+custo — e vence os controles fortes?* (codificador sigmoidal de 24 bits,
+gradiente reverso, λ escolhido só na validação, atacante neural externo,
+160 sementes, IC bootstrap):
+
+| resultado | ID | OOD |
+|---|---|---|
+| ΔJ (com adversário − sem), `IC95%` | **+2,4018×10⁻⁵** [+2,0822×10⁻⁵, +2,7210×10⁻⁵] | **+3,8618×10⁻⁵** [+3,3304×10⁻⁵, +4,4425×10⁻⁵] |
+| atacante neural sem → com adversário | 0,55633 → 0,52216 | 0,57977 → 0,55542 |
+| vs recorrente E10b (Δ) | **−0,001067** (desfavorável) | **−0,001944** (desfavorável) |
+
+**Vereditos publicados (com a mesma proeminência):** o adversarial **reduz
+reconstrução neural sem custo dentro da própria arquitetura** (H3: ICs
+estritamente positivos nos dois splits), mas **perde para todos os controles
+fortes do E10b** (H4 **refutada**: 8/8 comparações desfavoráveis, ICs
+negativos, ~0% de vitórias) e a reconstrução neural segue acima de 50%
+mesmo com adversário (H2 só parcial). A seleção de λ foi por **fallback**
+(nenhum λ atingiu o limite 0,515 — declarado, não é "restrição satisfeita").
+
+**Ressalva própria, encontrada na nossa verificação:** os ataques
+lineares/quadráticos do E10d são **degenerados** — `T = 2*Y−1` com `Y` uint8
+vira `{255,1}`, o ridge prevê >99,5% positivo e a "acurácia" ≈ taxa base
+(linear == quadrático em 9/9 comparações). Logo, "linear ≈ acaso" ali não
+mede reconstrução nenhuma: o que prova o vazamento é o atacante **neural**.
+Isso reforça a ressalva do decodificador do `docs/10` §6.4 e virou a
+pendência **P1.11** (atacante neural e temporal contra os **nossos**
+estados). A versão **linear** da ideia do P2.7 foi implementada de forma
+independente pela auditoria (E10c) e deu **nulo** — o P2.7 passa a ser
+formulado já com penalidade adversarial.
+
+## Auditorias externas MUTARIC ev 5/6 (04/10/2026 — `docs/12`)
+
+Quinta verificação externa, mesma regra — mas o zip
+`MUTARIC_E10e_200_SEMENTES.zip` veio **só com saídas** (JSON, CSV, PNG),
+**sem código**. Nada foi aceito assim: (1) **286/286 checagens aritméticas** —
+tabelas do ev 5 × JSON × CSV, fórmulas de privacidade, fronteiras de Pareto
+recalculadas por não-dominação e **todas** as estatísticas do ev 6 (t de Welch,
+gl, ICs, d de Cohen, z de proporções) recalculadas com `scipy`; e (2) uma
+**replicação NOSSA do protocolo** — `E10e_repl` (`E10e_repl`, 2 testes novos) —
+executada **neste terminal com as mesmas 200 sementes** do ev 5 (70000–70199),
+163,6 s, declarada como nossa: testa as alegações, não reproduz os números deles.
+
+| alegação | veredito na réplica (200 sementes, aqui) |
+|---|---|
+| Pareto ID = {0,3; 1} | **contido** no nosso {0,1; 0,3; 1} |
+| Pareto OOD = {0,003} | **não repetido ponto a ponto** — o nosso {0,01} fica na mesma prateleira P = 1 |
+| λ = 1 é o melhor score ID e o pior em privacidade | **confirmado** (−0,00362529; P = 0,99138) |
+| λ = 1 vaza mais OOD (ev 6, z = 3,7790) | **confirmado** com o pareado por semente: ΔA = +0,00615, IC [0,00460; 0,00767] |
+| "utilidade indistinguível" (ev 6, Welch) | o pareado acha diferença pequena mas **fora de zero** (ID +4,38×10⁻⁶; OOD −1,20×10⁻⁵) — publicada dos dois lados |
+
+Os vereditos completos, os desvios do protocolo de 7 pontos deles (λ não fixado
+antes do teste, sem ICs, sem atacante temporal — ninguém rodou) e as pendências
+reforçadas (**P3.4**, **P1.9**, **P1.11**) estão em `docs/12`.
+
 ## Quatro limites que não se deve esquecer
 
 1. **Roteiro, não emergência** — as procedências são cenários escritos à mão
@@ -235,10 +306,12 @@ leitor soft, curva × σ e CI verde). A fila agora é **P1** — ICs e teste de 
 para E1–E4, baseline séria (logística/MLP), transformações perceptivas reais, faixa
 de neutro, **P1.7** (carga como canal: espalhamento + decodificador, a única ideia
 do MutaCore que ficou como trabalho futuro), **P1.9** (protocolo hierárquico —
-correção da auditoria) e **P1.10** (controles fortes de memória no ambiente do
-E10 — correção da auditoria ev 2). Depois **P2.1**, trocar `mundo.episode()` por
+correção da auditoria), **P1.10** (controles fortes de memória no ambiente do
+E10 — correção da auditoria ev 2) e **P1.11** (atacante neural/temporal contra os
+nossos estados — da auditoria ev 3/4). Depois **P2.1**, trocar `mundo.episode()` por
 `teoa/core.py` de verdade, **P2.6** (agente sem evento externo sintético) e
-**P2.7** (E10c: resíduo preditivo com não reconstrução).
+**P2.7** (E10c: resíduo preditivo com não reconstrução — já com penalidade
+adversarial, após a versão linear dar nulo no E10c externo).
 Como retomar: `docs/07`.
 
 ---
@@ -257,8 +330,10 @@ by a relational reader that decodes **affective family, provenance and an explic
 
 **Status: exploratory prototype.** Six experiments (E1–E6), three external
 verification runs (E7–E9, from the MutaCore document), **E10** (equal budget,
-from the MUTARIC ev audit) and **E10b** (strong memory controls, from the
-MUTARIC ev 2 audit) run deterministically and are covered by **32 tests**,
+from the MUTARIC ev audit), **E10b** (strong memory controls, from the
+MUTARIC ev 2 audit), **E10d** (adversarial training + neural attacker,
+from the MUTARIC ev 3/4 audit) and **E10e_repl** (our own replication of the
+Pareto protocol, from the MUTARIC ev 5/6 audits) run deterministically and are covered by **36 tests**,
 but the world is **hand-scripted** and the reader **re-reads what the writer
 stored literally**. Read `docs/02_analise_achados.md`
 before quoting any number: it lists what the results do **not** support.
@@ -333,6 +408,50 @@ two queue items: **P1.10** (strong controls + OOD + bootstrap CI inside *our*
 E10 environment) and **P2.7** (E10c, predictive compressed residue under a
 non-reconstruction constraint). The document's first part (`e10.py` and their
 test files) was not provided and is declared **unverifiable**.
+
+**New in this cycle (`docs/11`):** the fourth external audit ("MUTARIC ev
+3/4") was verified by **execution** — its `e10d.py` was run here and
+regenerated the published JSON **identical (0 differences in 129 numbers)**;
+the document's tables passed **113/113 checks**; the code was ported as
+**E10d** (`E10d_controles`, 2 new tests). **E10c and E10e shipped no code**
+and remain unverifiable by execution (internal arithmetic only). E10d shows
+that adversarial training **reduces neural reconstruction without cost
+inside its own architecture** (ΔJ +2.4018e-5 ID / +3.8618e-5 OOD, both CIs
+strictly positive; neural attacker 0.556 → 0.522 and 0.580 → 0.555) **but
+loses to every strong E10b control in both splits** (H4 refuted: 8/8
+comparisons unfavourable, CIs negative, ≈0 % wins), and neural
+reconstruction stays above 50 % even with the adversary (H2 only partial).
+λ was chosen by **fallback** — no λ met the 0.515 limit (declared as
+fallback, not as a satisfied constraint). **Our own caveat, found during
+verification:** the document's linear/quadratic attackers are **degenerate**
+(`T = 2Y−1` on uint8 wraps to `{255,1}`, so the ridge predicts >99.5 %
+positive and scores ≈ the base rate; linear == quadratic in 9/9 comparisons)
+— "linear ≈ chance" there measures nothing, and the neural attacker is the
+only real evidence. This reinforces the decoder caveat in `docs/10` §6.4 and
+became roadmap item **P1.11** (neural/temporal attackers against *our*
+states); the **linear** version of P2.7's idea was independently implemented
+by the audit (E10c) and came out **null**, so P2.7 is now specified with an
+adversarial penalty.
+
+**New in this cycle (`docs/12`):** the fifth external verification package
+("MUTARIC ev 5 / ev 6") shipped **outputs only — no code**, so nothing was
+accepted at face value: **286/286 arithmetic checks** (document × JSON × CSV,
+privacy formulas, Pareto frontiers recomputed, and every ev 6 statistic — Welch
+t/df/p/CI/Cohen's d and the proportion z-tests — recomputed with `scipy`), plus
+**our own replication of the protocol executed on this terminal**
+(`E10e_repl`, the same 200 seeds 70000–70199, 163.6 s, paired per seed, 2 new
+tests). Verdicts: their ID Pareto {0.3; 1} **is contained in ours**
+{0.1; 0.3; 1}; **their exact OOD Pareto did not repeat** (ours {0.01} vs theirs
+{0.003} — same P = 1 plateau, different point, published with the same
+prominence); λ = 1's best ID score and worst privacy in all four corners were
+**confirmed**, and its larger OOD leakage was confirmed with the **paired
+per-seed bootstrap ev 6 could not run** (it saved no per-seed data):
+ΔA = +0.00615 [0.00460, 0.00767]. The paired test also finds tiny but nonzero
+utility differences (ID +4.38e-6, OOD −1.20e-5), so ev 6's "no detectable
+utility difference" is published as **test-dependent**. Adopted: save per-seed
+scores *and* per-seed attacker accuracies, prefer paired over Welch at this
+sample size, and fix λ before touching the test set (**P3.4**, reinforced by
+their own lost OOD frontier).
 
 Full English documentation: [`README.en.md`](README.en.md). Architecture, findings,
 TEOA↔PIXEL mapping and roadmap in `docs/` (Portuguese).

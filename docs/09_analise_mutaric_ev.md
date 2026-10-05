@@ -197,7 +197,10 @@ conforme a decisão `docs/06` §9 sobre manter o núcleo determinístico).
   `docs/10`; `docs/04`).
 - Próximo experimento natural: **E11** — E10 com política *aprendida* por
   agente (hoje a política única é limitação declarada, §7.1). O **E10c**
-  proposto pela auditoria ev 2 ficou como **P2.7** (`docs/04`).
+  proposto pela auditoria ev 2 ficou como **P2.7** (`docs/04`) — atualizado
+  no ciclo 8 (`docs/11` §5): a versão linear foi implementada de forma
+  independente pela auditoria ev 3/4 e deu **nulo**, então o P2.7 já nasce
+  com penalidade adversarial.
 
 ---
 

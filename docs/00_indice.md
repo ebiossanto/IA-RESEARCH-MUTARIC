@@ -15,6 +15,8 @@ Ponto de entrada do repositório. Todo o resto está em `README.md` (PT) e
 | `08_historico_completo.md` | **História**: todos os estudos feitos e todas as mudanças de direção | Para o relatório completo do trabalho |
 | `09_analise_mutaric_ev.md` | Auditoria externa MUTARIC ev: 5 correções, proposição, E10 (orçamento igual) e coleta real desta máquina | Para o ciclo 6 de verificação externa |
 | `10_analise_mutaric_ev2.md` | Auditoria externa MUTARIC ev 2: E10b executado e reproduzido (58/58) — o resíduo **não vence** memórias fortes de igual orçamento | Para o ciclo 7 de verificação externa |
+| `11_analise_mutaric_ev3_ev4.md` | Auditoria externa MUTARIC ev 3/4: E10d executado e reproduzido (113/113 checagens, JSON idêntico) — adversarial reduz vazamento neural mas **perde** para os controles; E10c/E10e sem código | Para o ciclo 8 de verificação externa |
+| `12_analise_mutaric_ev5_ev6.md` | Auditorias externas MUTARIC ev 5/6: 286/286 checagens aritméticas (zip sem código) + **E10e_repl** — nossa replicação do protocolo Pareto com as mesmas 200 sementes, pareada por semente | Para o ciclo 9 de verificação externa |
 
 ## Ordem de leitura
 
@@ -22,16 +24,17 @@ Ponto de entrada do repositório. Todo o resto está em `README.md` (PT) e
 - **30 minutos:** + `04` (plano e status) e `07` (como retomar).
 - **2 horas:** + `02` (achados e limitações), `06` (provas do ciclo MutaCore),
   `09` (provas do ciclo MUTARIC ev), `10` (provas do ciclo MUTARIC ev 2),
+  `11` (provas do ciclo MUTARIC ev 3/4), `12` (provas do ciclo MUTARIC ev 5/6),
   `05` (mecanismos), `01` (contrato), `03` (ponte), `08` (histórico).
 
 ## Onde vivem as coisas
 
 ```
 ricemotions/     código (mundo · glifo · residuo · agente · homeostase · experimentos)
-tests/           32 testes de sanidade + regressão dos números publicados
+tests/           36 testes de sanidade + regressão dos números publicados
 resultados/      resultados.json — fonte única dos números citados (regenerável);
                  + maquina.json e telemetria_real.json (coleta real, NÃO regressada)
-figs/            10 figuras geradas (regeneráveis; o diff deve ser vazio)
+figs/            12 figuras geradas (regeneráveis; o diff deve ser vazio)
 .github/         CI: matriz Windows + Linux rodando os testes
 ```
 

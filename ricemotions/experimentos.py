@@ -22,9 +22,20 @@ E10b Controles fortes de memória com 24 bits por agente (EMA assinada, magnitud
     janela curta, recorrente aprendido; ID + OOD) — port fiel do e10b.py externo
     (auditoria MUTARIC ev 2, docs/10): a formulação forte é refutada e isto é
     publicado com a mesma proeminência dos resultados positivos.
+E10d Treinamento adversarial + atacante neural sobre codificador de 24 bits —
+    port fiel do e10d.py externo (auditoria MUTARIC ev 3/4, docs/11): o atacante
+    neural acha conteúdo que os testes lineares não medem, mas o E10d perde para
+    todos os controles fortes do E10b; seleção de λ por fallback registrada.
+E10e_repl Replicação NOSSA do protocolo de Pareto do E10e (auditorias MUTARIC
+    ev 5/6, docs/12), executada NESTE terminal com as mesmas 200 sementes
+    (70000..70199): as auditorias vieram sem código, então isto não reproduz
+    os números deles — testa as alegações (fronteiras de Pareto, vazamento de
+    λ=1) em implementação independente sobre o ambiente verificado, e faz o
+    teste pareado por semente que o ev 6 não pôde fazer.
 
-Análise, vereditos e provas: docs/06_analise_mutacore.md, docs/09_analise_mutaric_ev.md
-e docs/10_analise_mutaric_ev2.md (E10b: controles fortes de memória, 24 bits).
+Análise, vereditos e provas: docs/06_analise_mutacore.md, docs/09_analise_mutaric_ev.md,
+docs/10_analise_mutaric_ev2.md (E10b), docs/11_analise_mutaric_ev3_ev4.md (E10d) e
+docs/12_analise_mutaric_ev5_ev6.md (E10e_repl).
 Coleta REAL de informação desta máquina (não determinística, fora do run_all):
     python -m ricemotions.experimentos --telemetria
 """
@@ -1009,6 +1020,432 @@ def e10b_controles(n_seeds=200, train_sequences=None):
     return res
 
 
+# =========================================================================
+# E10d — treinamento adversarial + atacante neural, 24 bits (MUTARIC ev 3/4)
+# Port FIEL do e10d.py externo (anexo recebido em 04/10/2026, docs/11): a
+# execução local do arquivo deles regenera o e10d_resultados.json publicado;
+# este port regera os mesmos valores (test_e10d_reproduz_o_documento).
+# Achados adotados (docs/11): o atacante neural encontra conteúdo recuperável
+# (52%–58%) e o E10d perde para TODOS os controles fortes do E10b nos dois
+# splits; ressalva própria: o atacante linear/quadrático deles é degenerado
+# (uint8 em `2*Y-1` vira {255,1} => previsão quase sempre positiva), então
+# "linear ~ acaso" ali não mede reconstrução nenhuma.
+# Determinístico: tudo é semeado (treino 101, ataque 77/88, IC 884/910+len).
+# =========================================================================
+E10D_LAMBDAS = (0.0, 0.01, 0.03, 0.1, 0.3)
+E10D_CFG = dict(E10B_CFG, validation_sequences=48, epochs=24, batch=256,
+                hidden_adv=24, lr_encoder=.018, lr_adversary=.025,
+                leakage_limit=.515, neural_attack_epochs=80)
+
+
+def _e10d_sig(x):
+    x = np.clip(x, -30, 30)
+    return 1 / (1 + np.exp(-x))
+
+
+def _e10d_samples(c, seeds):
+    """Tuplos forçados (q anterior, sinal, quadrado, próximo q) — só treino."""
+    hp, sg, sq, nxt = [], [], [], []
+    for seed in seeds:
+        d = _e10b_dseq(seed, c, False)
+        s = np.clip(d / c["high"], -1, 1); q = s * s; prev = np.zeros(E10B_N)
+        for t in range(len(d) - 1):
+            hp.append(prev); sg.append(s[t]); sq.append(q[t])
+            nxt.append(q[t + 1]); prev = q[t + 1]
+    return np.asarray(hp), np.asarray(sg), np.asarray(sq), np.asarray(nxt)
+
+
+class _e10d_Adv:
+    """Adversário interno (MLP 6→24→6, tanh + sigmoid, BCE por amostra)."""
+
+    def __init__(self, rng, width=24):
+        self.W1 = rng.normal(0, .18, (E10B_N, width)); self.b1 = np.zeros(width)
+        self.W2 = rng.normal(0, .18, (width, E10B_N)); self.b2 = np.zeros(E10B_N)
+
+    def forward(self, h):
+        a = np.tanh(h @ self.W1 + self.b1)
+        return a, _e10d_sig(a @ self.W2 + self.b2)
+
+    def step(self, h, y, lr):
+        a, p = self.forward(h); n = len(h); dz = (p - y) / n
+        dW2 = a.T @ dz; db2 = dz.sum(0); da = dz @ self.W2.T * (1 - a * a)
+        dW1 = h.T @ da; db1 = da.sum(0)
+        self.W2 -= lr * dW2; self.b2 -= lr * db2
+        self.W1 -= lr * dW1; self.b1 -= lr * db1
+
+    def grad_h_bce(self, h, y):
+        a, p = self.forward(h); dz = (p - y) / len(h)
+        return (dz @ self.W2.T * (1 - a * a)) @ self.W1.T
+
+
+class _e10d_Enc:
+    """Codificador: 18 entradas (h anterior, sinal, quadrado) -> 6 canais Q4."""
+
+    def __init__(self, rng):
+        self.W = rng.normal(0, .10, (3 * E10B_N, E10B_N))
+        self.b = np.full(E10B_N, -1.15)
+
+    def state(self, h, s, q):
+        return _e10b_q(_e10d_sig(np.c_[h, s, q] @ self.W + self.b))
+
+
+def _e10d_train(c, lam, seed=101):
+    """Gradiente reverso: utilidade (prever q futuro) − λ·BCE do adversário."""
+    rng = np.random.default_rng(seed)
+    enc = _e10d_Enc(rng); adv = _e10d_Adv(rng, c["hidden_adv"])
+    hp, sg, sq, nxt = _e10d_samples(c, range(100000, 100000 + c["train_sequences"]))
+    y = (sg > 0).astype(float); m = len(hp)
+    for _ in range(c["epochs"]):
+        order = rng.permutation(m)
+        for st in range(0, m, c["batch"]):
+            ix = order[st:st + c["batch"]]; X = np.c_[hp[ix], sg[ix], sq[ix]]
+            pre = X @ enc.W + enc.b; h = _e10d_sig(pre); hq = _e10b_q(h)
+            adv.step(hq, y[ix], c["lr_adversary"])            # adversário primeiro
+            gu = 2 * (h - nxt[ix]) / (len(ix) * E10B_N)        # utilidade
+            gp = adv.grad_h_bce(hq, y[ix])                     # reverso
+            gh = gu - lam * gp
+            dz = gh * h * (1 - h)                              # STE do quantizador
+            enc.W -= c["lr_encoder"] * (X.T @ dz + c["ridge"] * enc.W)
+            enc.b -= c["lr_encoder"] * dz.sum(0)
+    return enc
+
+
+def _e10d_episode(seed, c, enc, ood=False):
+    dseq = _e10b_dseq(seed, c, ood)
+    x = np.full(E10B_N, c["target"]); h = np.zeros(E10B_N)
+    loss = eff = 0.0; H = []; S = []; C = []
+    for d in dseq:
+        s0 = h.sum()
+        alloc = (h / s0 if s0 > 1e-12 else np.full(E10B_N, 1.0 / E10B_N)) * c["action_budget"]
+        gain = c["base_gain"] + c["memory_gain"] * alloc
+        x = np.clip(x + gain * (c["target"] - x) + d, 0, 1)
+        loss += np.mean((x - c["target"]) ** 2)
+        eff += np.mean((gain - c["base_gain"]) ** 2)
+        s = np.clip(d / c["high"], -1, 1)
+        h = enc.state(h[None], s[None], (s * s)[None])[0]
+        H.append(h.copy()); S.append((s > 0).astype(np.uint8)); C.append(s.copy())
+    n = c["steps"]
+    return {"score": -(loss + .08 * eff) / n, "loss": loss / n,
+            "trace": np.asarray(H), "sign": np.asarray(S), "content": np.asarray(C)}
+
+
+class _e10d_Ataq:
+    """Atacante neural EXTERNO: 6→48→6, tanh + sigmoid; avaliação em metade
+    distinta das trajetórias e inicialização própria (77)."""
+
+    def __init__(self, seed=77, width=48):
+        r = np.random.default_rng(seed)
+        self.W1 = r.normal(0, .16, (E10B_N, width)); self.b1 = np.zeros(width)
+        self.W2 = r.normal(0, .16, (width, E10B_N)); self.b2 = np.zeros(E10B_N)
+
+    def forward(self, x):
+        a = np.tanh(x @ self.W1 + self.b1)
+        return a, _e10d_sig(a @ self.W2 + self.b2)
+
+    def fit(self, x, y, epochs=80, batch=512, lr=.025):
+        r = np.random.default_rng(88)
+        for _ in range(epochs):
+            for st in range(0, len(x), batch):
+                ix = r.permutation(len(x))[st:st + batch]
+                a, p = self.forward(x[ix]); dz = (p - y[ix]) / len(ix)
+                dW2 = a.T @ dz; db2 = dz.sum(0); da = dz @ self.W2.T * (1 - a * a)
+                self.W1 -= lr * x[ix].T @ da; self.b1 -= lr * da.sum(0)
+                self.W2 -= lr * dW2; self.b2 -= lr * db2
+
+    def acc(self, x, y):
+        return float(np.mean((self.forward(x)[1] > .5) == y))
+
+
+def _e10d_ataques(runs, c):
+    """Ridge linear + ridge quadrático + MLP externo (metade 1 treina, 2 testa).
+
+    Ressalva (docs/11 §4): `2*Y-1` com Y uint8 vira {255,1}, então os dois
+    ridges prevem quase tudo positivo e medem ~taxa base — não medem
+    reconstrução. O atacante neural é o único que de fato ataca aqui."""
+    H = np.concatenate([r["trace"] for r in runs])
+    Y = np.concatenate([r["sign"] for r in runs]); cut = len(H) // 2
+
+    def ridge_acc(phi):
+        X = phi(H[:cut]); T = 2 * Y[:cut] - 1; Xt = phi(H[cut:])
+        reg = 1e-3 * np.eye(X.shape[1]); reg[-1, -1] = 0
+        W = np.linalg.solve(X.T @ X + reg, X.T @ T)
+        return float(np.mean((Xt @ W > 0) == Y[cut:]))
+
+    lin = ridge_acc(lambda z: np.c_[z, np.ones(len(z))])
+    quad = ridge_acc(lambda z: np.c_[z, z * z, np.ones(len(z))])
+    na = _e10d_Ataq(); na.fit(H[:cut], Y[:cut], c["neural_attack_epochs"])
+    return {"linear": lin, "quadratico": quad, "neural": na.acc(H[cut:], Y[cut:])}
+
+
+def _e10d_avalia(enc, c, seeds, ood=False):
+    rs = [_e10d_episode(s, c, enc, ood) for s in seeds]
+    sc = np.array([r["score"] for r in rs]); lo = np.array([r["loss"] for r in rs])
+    return rs, {"score_medio": float(sc.mean()), "loss_medio": float(lo.mean()),
+                "desvio_score": float(sc.std(ddof=1)),
+                "ataques": _e10d_ataques(rs, c)}
+
+
+def _e10d_ci(d, seed=884, n=5000):
+    rng = np.random.default_rng(seed)
+    z = rng.choice(d, (n, len(d)), replace=True).mean(1)
+    return [float(np.quantile(z, .025)), float(np.quantile(z, .975))]
+
+
+def e10d_controles(n_test=160, cfg=None):
+    """E10d: treinamento adversarial sobre codificador novo, com atacante neural.
+
+    Varredura de λ só na validação (30000+); nenhum λ atingiu o limite 0,515 →
+    seleção por *fallback* (maior score), registrada assim. Teste (50000+)
+    compara sem/com adversário e contra os controles fortes do E10b (ID+OOD).
+    """
+    c = dict(E10D_CFG) if cfg is None else dict(cfg)
+    val = range(30000, 30000 + c["validation_sequences"])
+    sweep = {}; encs = {}
+    for lam in E10D_LAMBDAS:
+        enc = _e10d_train(c, lam, 101); encs[lam] = enc
+        _, m = _e10d_avalia(enc, c, val, False); sweep[str(lam)] = m
+    feasible = [l for l in E10D_LAMBDAS
+                if sweep[str(l)]["ataques"]["neural"] <= c["leakage_limit"]]
+    chosen = max(feasible or E10D_LAMBDAS, key=lambda l: sweep[str(l)]["score_medio"])
+    private = encs[chosen]; base = encs[0.0]
+    out = {"protocolo": dict(
+        config=c, bits_mutaveis=E10B_BUDGET, lambdas=list(E10D_LAMBDAS),
+        treino="100000..", validacao="30000..", teste="50000.. disjuntos",
+        otimizacao="gradiente reverso, adversario MLP adaptativo, STE e "
+                   "gradiente recorrente truncado em um passo",
+        criterio="maior score com atacante neural de validacao <= limite",
+        limite="nao prova independencia; atacante externo e familia finita"),
+        "varredura_validacao": sweep, "lambda_escolhido": chosen}
+    Wb = _e10b_train(c); seeds = list(range(50000, 50000 + n_test))
+    for split, ood in (("id", False), ("ood", True)):
+        rb, mb = _e10d_avalia(base, c, seeds, ood)
+        rp, mp = _e10d_avalia(private, c, seeds, ood)
+        ps = np.array([r["score"] for r in rp]); bs = np.array([r["score"] for r in rb])
+        out[split] = {"sem_adversario": mb, "adversarial": mp,
+                      "efeito_adversarial": {
+                          "delta_score": float((ps - bs).mean()),
+                          "ic95": _e10d_ci(ps - bs),
+                          "delta_atacante_neural":
+                              mp["ataques"]["neural"] - mb["ataques"]["neural"]},
+                      "comparadores": {}}
+        for k in ("magnitude_ema", "square_ema", "short_window", "learned_recurrent"):
+            rs = [_e10b_episode(s, k, c, Wb, ood) for s in seeds]
+            ss = np.array([r["score"] for r in rs]); d = ps - ss
+            ic = _e10d_ci(d, 910 + len(k))
+            out[split]["comparadores"][k] = {
+                "score_medio": float(ss.mean()), "delta": float(d.mean()),
+                "ic95": ic, "vitorias": float(np.mean(d > 0)),
+                "conclusao": ("favoravel" if ic[0] > 0 else
+                              ("desfavoravel" if ic[1] < 0 else "inconclusiva"))}
+    return out
+
+
+# =========================================================================
+# E10e_repl - replicacao NOSSA do protocolo de Pareto do E10e (auditoria
+# MUTARIC ev 5/6, docs/12). As auditorias ev 5 e ev 6 vieram SEM codigo
+# (só JSON/CSV/PNG), entao nao ha o que reproduzir por execucao: aqui
+# implementamos o protocolo DESCrito (ev 3/4 §1-4 + ev 5) sobre o ambiente
+# E10b/E10d ja verificado (o port do E10d regera o JSON externo exato) e o
+# rodamos NESTE terminal com as MESMAS 200 sementes do ev 5 (70000..70199).
+# Nao e reproducao dos numeros deles (impossivel sem o codigo de referencia)
+# - e um teste das alegacoes (fronteiras de Pareto, vazamento de l=1,
+# nao monotonicidade) numa implementacao independente. Tambem fazemos o
+# teste pareado por semente que o ev 6 nao pôde fazer (nao salvou os
+# valores por semente).
+# Deterministico: treino 101, ataque 77/78, IC 884/910+len.
+# =========================================================================
+E10E_LAMBDAS = (0.0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1.0)
+E10E_CFG = dict(E10B_CFG, steps=240, train_sequences=24, epochs=4, batch=256,
+                hidden_adv=32, lr_encoder=.012, lr_adversary=.025,
+                neural_attack_epochs=10)
+
+
+class _e10e_Enc:
+    """h <- Q4(clip(A h + Bq q + Bs s + b, 0, 1)); A/Bq/b copiados do E10b,
+    bloco assinado Bs = 0 (ev 3/4 §1)."""
+
+    def __init__(self, c, W=None):
+        W = _e10b_train(c) if W is None else W
+        n = E10B_N
+        self.A = W[:n].copy(); self.Bq = W[n:2 * n].copy()
+        self.b = W[2 * n].copy(); self.Bs = np.zeros((n, n))
+
+    def pre(self, h, s, q):
+        return h @ self.A + q @ self.Bq + s @ self.Bs + self.b
+
+    def state(self, h, s, q):
+        return _e10b_q(np.clip(self.pre(h, s, q), 0, 1))
+
+
+def _e10e_rollout(enc, c):
+    """Amostras de treino com os pesos ATUAIS: h evolui sozinho (sem BPTT),
+    alvos q_{t+1} (utilidade) e z = 1[s>0] (adversario)."""
+    Hp, Sg, Sq, Nxt, Z = [], [], [], [], []
+    for seed in range(100000, 100000 + c["train_sequences"]):
+        d = _e10b_dseq(seed, c, False)
+        s = np.clip(d / c["high"], -1, 1); q = s * s
+        h = np.zeros((1, E10B_N))
+        for t in range(len(d) - 1):
+            Hp.append(h[0]); Sg.append(s[t]); Sq.append(q[t])
+            Nxt.append(q[t + 1]); Z.append((s[t] > 0).astype(float))
+            h = enc.state(h, s[t][None], q[t][None])
+    return (np.asarray(Hp), np.asarray(Sg), np.asarray(Sq),
+            np.asarray(Nxt), np.asarray(Z))
+
+
+def _e10e_train(c, lam, seed=101):
+    """L = ||h_{t+1} - q_{t+1}||² - lambda·BCE (gradiente reverso, clip/Q4
+    com estimador direto, gradiente recorrente truncado em um passo)."""
+    rng = np.random.default_rng(seed)
+    enc = _e10e_Enc(c); adv = _e10d_Adv(rng, c["hidden_adv"])
+    for _ in range(c["epochs"]):
+        Hp, Sg, Sq, Nxt, Z = _e10e_rollout(enc, c)
+        m = len(Hp); order = rng.permutation(m)
+        for st in range(0, m, c["batch"]):
+            ix = order[st:st + c["batch"]]
+            u = np.clip(enc.pre(Hp[ix], Sg[ix], Sq[ix]), 0, 1)   # STE
+            adv.step(u, Z[ix], c["lr_adversary"])                # adversario
+            gu = 2 * (u - Nxt[ix]) / (len(ix) * E10B_N)          # utilidade
+            gh = gu - lam * adv.grad_h_bce(u, Z[ix])             # reverso
+            enc.A -= c["lr_encoder"] * (Hp[ix].T @ gh + c["ridge"] * enc.A)
+            enc.Bq -= c["lr_encoder"] * (Sq[ix].T @ gh + c["ridge"] * enc.Bq)
+            enc.Bs -= c["lr_encoder"] * (Sg[ix].T @ gh + c["ridge"] * enc.Bs)
+            enc.b -= c["lr_encoder"] * gh.sum(0)
+    return enc
+
+
+def _e10e_ataques(runs, c):
+    """Ridge linear/quadratico (alvo inteiro - SEM o bug uint8 do e10d) +
+    dois atacantes neurais externos (64 unidades, inits 77 e 78), metade
+    das trajetórias treina / metade testa (ev 3/4 §3).
+
+    Devolve tambem a acuracia POR SEMENTE do melhor atacante, que e o que
+    permite o teste pareado que o ev 6 nao pôde fazer."""
+    H = np.concatenate([r["trace"] for r in runs])
+    Y = np.concatenate([r["sign"] for r in runs]); cut = len(H) // 2
+
+    def ridge_acc(phi):
+        X = phi(H[:cut]); T = (2 * Y[:cut] - 1).astype(int); Xt = phi(H[cut:])
+        reg = 1e-3 * np.eye(X.shape[1]); reg[-1, -1] = 0
+        W = np.linalg.solve(X.T @ X + reg, X.T @ T)
+        return float(np.mean((Xt @ W > 0) == Y[cut:]))
+
+    lin = ridge_acc(lambda z: np.c_[z, np.ones(len(z))])
+    quad = ridge_acc(lambda z: np.c_[z, z * z, np.ones(len(z))])
+    nets, per_run = [], []
+    for sd in (77, 78):
+        na = _e10d_Ataq(seed=sd, width=64)
+        na.fit(H[:cut], Y[:cut], epochs=c["neural_attack_epochs"], batch=512, lr=.025)
+        nets.append(na)
+    # acuracia por SEMENTE (so as trajetorias do teste - metade final)
+    n = len(runs); step = len(runs[0]["trace"]); half = n // 2
+    base = cut  # inicio das linhas de teste no concatenado
+    for i in range(half, n):
+        sl = slice(base + (i - half) * step, base + (i - half + 1) * step)
+        accs = [float(np.mean((net.forward(H[sl])[1] > .5) == Y[sl])) for net in nets]
+        per_run.append(max(accs))
+    execs = [float(np.mean((net.forward(H[cut:])[1] > .5) == Y[cut:])) for net in nets]
+    return {"linear": lin, "quadratico": quad, "neural": max(execs),
+            "neural_execucoes": execs, "neural_por_semente": per_run}
+
+
+def _e10e_pareado(a, b, seed):
+    """Estatistica pareada por semente (IC bootstrap da diferenca)."""
+    d = np.asarray(a) - np.asarray(b)
+    return dict(delta=float(d.mean()), ic95=_e10d_ci(d, seed),
+                vitorias=float(np.mean(d > 0)), n=int(len(d)))
+
+
+def e10e_repl(n_test=200, cfg=None, lambdas=E10E_LAMBDAS):
+    """E10e_repl: sweep de Pareto (score x privacidade) por lambda.
+
+    Executado AQUI com as sementes 70000..70199 do ev 5. Privacidade
+    P = 1 - 2·max(0, A_max - 0,5) com dois atacantes neurais; fronteira de
+    Pareto = nao dominancia em (score, P). Ate o fim, comparacao com as
+    alegacoes do ev 5/6 e o teste pareado l=1 vs l=0,003."""
+    c = dict(E10E_CFG) if cfg is None else dict(cfg)
+    seeds = list(range(70000, 70000 + n_test))
+    out = {"protocolo": dict(
+        config=c, lambdas=list(lambdas), bits_mutaveis=E10B_BUDGET,
+        sementes="70000..+n (mesmas do ev 5); treino 100000..100000+train_sequences",
+        implementacao="nossa, do protocolo descrito (ev 3/4 §1-4 e ev 5): a "
+                      "auditoria nao forneceu codigo, entao isto NAO reproduz "
+                      "os numeros deles - testa as alegacoes em uma "
+                      "implementacao independente sobre o ambiente verificado",
+        ataques="ridge linear/quadratico com alvo inteiro (sem o bug uint8 do "
+                "e10d) + 2 neurais de 64 unidades (inits 77/78); metade das "
+                "trajetorias treina, metade testa",
+        ev5=dict(id_pareto=[0.3, 1.0], ood_pareto=[0.003],
+                 recomendacao_deles="l=0,003 (ev 5 §7 / ev 6 §7)"))}
+    scores, pers = {}, {}
+    for split, ood in (("id", False), ("ood", True)):
+        scores[split] = {}; pers[split] = {}; pts = []
+        for lam in lambdas:
+            enc = _e10e_train(c, lam, 101)
+            rs = [_e10d_episode(s, c, enc, ood) for s in seeds]
+            sc = np.array([r["score"] for r in rs])
+            at = _e10e_ataques(rs, c)
+            A = at["neural"]; v = max(0.0, A - 0.5)
+            scores[split][lam] = sc; pers[split][lam] = at["neural_por_semente"]
+            pts.append({"lambda": float(lam), "score_medio": float(sc.mean()),
+                        "desvio_score": float(sc.std(ddof=1)),
+                        "neural_execucoes": list(at["neural_execucoes"]),
+                        "neural_max": A, "vantagem_neural": v, "privacidade": 1 - 2 * v,
+                        "atacantes_auxiliares": dict(linear=at["linear"],
+                                                     quadratico=at["quadratico"])})
+        out[split] = {"pontos": pts, "pareto": sorted(
+            p["lambda"] for p in pts
+            if not any(q["score_medio"] >= p["score_medio"]
+                       and q["privacidade"] >= p["privacidade"]
+                       and (q["score_medio"] > p["score_medio"]
+                            or q["privacidade"] > p["privacidade"])
+                       for q in pts if q is not p))}
+    # ---- teste pareado l=1 vs l=0,003 (o ev 6 pediu; ele nao salvou por semente)
+    par = {}
+    if 1.0 in scores["id"] and 0.003 in scores["id"]:
+        for split in ("id", "ood"):
+            par[split] = {
+                "utilidade_delta_l1_menos_l003": _e10e_pareado(
+                    scores[split][1.0], scores[split][0.003], 884),
+                "atacante_neural_delta_l1_menos_l003": _e10e_pareado(
+                    pers[split][1.0], pers[split][0.003], 911)}
+    out["pareado_l1_vs_l003"] = par
+    # ---- comparacao com as alegacoes do ev 5/ev 6
+    j1 = {s: [p for p in out[s]["pontos"] if p["lambda"] == 1.0][0] for s in ("id", "ood")}
+    j003 = {s: [p for p in out[s]["pontos"] if p["lambda"] == 0.003][0] for s in ("id", "ood")}
+    par05 = lambda s: all(p["privacidade"] == 1 for p in out[s]["pontos"]     # noqa: E731
+                          if p["lambda"] in out[s]["pareto"])
+    cmp = dict(
+        pareto_id_nosso=out["id"]["pareto"], pareto_id_deles=[0.3, 1.0],
+        pareto_id_confere=out["id"]["pareto"] == [0.3, 1.0],
+        pareto_id_deles_contido_nosso=all(
+            l in out["id"]["pareto"] for l in (0.3, 1.0)),
+        pareto_ood_nosso=out["ood"]["pareto"], pareto_ood_deles=[0.003],
+        pareto_ood_confere=out["ood"]["pareto"] == [0.003],
+        pareto_ood_nosso_na_pristeira_p1=par05("ood"),
+        l1_melhor_score_id=j1["id"]["score_medio"] == max(
+            p["score_medio"] for p in out["id"]["pontos"]),
+        l1_pior_privacidade_id=j1["id"]["privacidade"] == min(
+            p["privacidade"] for p in out["id"]["pontos"]),
+        l1_pior_score_ood=j1["ood"]["score_medio"] == min(
+            p["score_medio"] for p in out["ood"]["pontos"]),
+        l1_pior_privacidade_ood=j1["ood"]["privacidade"] == min(
+            p["privacidade"] for p in out["ood"]["pontos"]),
+        nao_monotonico_id=len({p["privacidade"] for p in out["id"]["pontos"]}) > 1
+        and j003["id"]["privacidade"] > j1["id"]["privacidade"])
+    if par:
+        cmp["ev6_sem_diferenca_utilidade_id_confere"] = (
+            par["id"]["utilidade_delta_l1_menos_l003"]["ic95"][0] <= 0
+            <= par["id"]["utilidade_delta_l1_menos_l003"]["ic95"][1])
+        cmp["ev6_sem_diferenca_utilidade_ood_confere"] = (
+            par["ood"]["utilidade_delta_l1_menos_l003"]["ic95"][0] <= 0
+            <= par["ood"]["utilidade_delta_l1_menos_l003"]["ic95"][1])
+        cmp["ev6_vazamento_maior_l1_ood_confere"] = (
+            par["ood"]["atacante_neural_delta_l1_menos_l003"]["ic95"][0] > 0)
+    out["comparacao_ev5_ev6"] = cmp
+    return out
+
+
 def main():
     rng = np.random.default_rng(0)
     os.makedirs(FIG, exist_ok=True); os.makedirs(RES, exist_ok=True)
@@ -1145,6 +1582,10 @@ def main():
     res["E10_orcamento"] = e10_orcamento()
     # ---- controles fortes de memória, 24 bits (auditoria MUTARIC ev 2, docs/10) ----
     res["E10b_controles"] = e10b_controles()
+    # ---- treinamento adversarial + atacante neural (auditoria ev 3/4, docs/11) ----
+    res["E10d_controles"] = e10d_controles()
+    # ---- replicacao NOSSA do protocolo Pareto ev 5/6 (docs/12), 200 sementes ----
+    res["E10e_repl"] = e10e_repl()
 
     # ---- demonstração: mensagem de texto em vários glifos emocionais ----
     msg = "Ganhei!"
@@ -1314,6 +1755,89 @@ def figuras(res, Ite, yte, Gtr, ytr, tau):
         ax[1, col].grid(alpha=.3, axis="x")
     fig.suptitle("E10b — controles fortes de memória, 24 bits por agente (docs/10)", fontsize=10)
     fig.tight_layout(); fig.savefig(os.path.join(FIG, "e10b_controles.png"), dpi=130); plt.close(fig)
+
+    # 11) E10d — treinamento adversarial × atacante neural (MUTARIC ev 3/4, docs/11)
+    d10d = res["E10d_controles"]; sv = d10d["varredura_validacao"]
+    fig, ax = plt.subplots(2, 2, figsize=(11, 7))
+    lams = [float(k) for k in sv]
+    neu = [sv[str(l)]["ataques"]["neural"] for l in lams]
+    ax[0, 0].plot(lams, neu, "o-", color="tab:red")
+    ax[0, 0].axhline(0.5, ls=":", c="k"); ax[0, 0].axhline(0.515, ls="--", c="gray")
+    ax[0, 0].set_xscale("symlog", linthresh=0.01); ax[0, 0].set_xticks(lams)
+    ax[0, 0].set_xticklabels([str(l) for l in lams])
+    ax[0, 0].set_title("validação: atacante neural × λ (limite 0,515: nenhum atingiu → fallback)",
+                       fontsize=9)
+    ax[0, 0].grid(alpha=.3)
+    b = 0.35; xs = [0, 1]
+    for j, split in enumerate(("id", "ood")):
+        lin = [d10d[split]["sem_adversario"]["ataques"]["linear"],
+               d10d[split]["adversarial"]["ataques"]["linear"]]
+        neu2 = [d10d[split]["sem_adversario"]["ataques"]["neural"],
+                d10d[split]["adversarial"]["ataques"]["neural"]]
+        ax[0, 1].bar([x - (0.5 - j) * b for x in xs], lin, b * 0.9,
+                     color=["tab:gray", "lightgray"][j],
+                     label=f"linear {'sem' if j == 0 else 'com'} adv ({split.upper()})")
+        ax[0, 1].bar([x + (0.5 - j) * b for x in xs], neu2, b * 0.9,
+                     color=["tab:red", "tab:orange"][j],
+                     label=f"neural {'sem' if j == 0 else 'com'} adv ({split.upper()})")
+    ax[0, 1].axhline(0.5, ls=":", c="k")
+    ax[0, 1].set_xticks(xs); ax[0, 1].set_xticklabels(["sem adversário", "com adversário"])
+    ax[0, 1].set_title("acurácia de ataque (linear ~ degenerado; neural 52–58%)", fontsize=9)
+    ax[0, 1].legend(fontsize=6); ax[0, 1].grid(alpha=.3, axis="y")
+    for j, split in enumerate(("id", "ood")):
+        ef = d10d[split]["efeito_adversarial"]; m = ef["delta_score"]
+        err = [[m - ef["ic95"][0]], [ef["ic95"][1] - m]]
+        ax[1, 0].bar([j], [m], 0.5, yerr=err, color="tab:green", capsize=4)
+    ax[1, 0].axhline(0, color="black", lw=.8)
+    ax[1, 0].set_xticks(xs); ax[1, 0].set_xticklabels(["ID", "OOD"])
+    ax[1, 0].set_title("Δ pareado do score: adversarial − sem (IC95%)", fontsize=9)
+    ax[1, 0].grid(alpha=.3, axis="y")
+    ck = list(d10d["id"]["comparadores"]); y = np.arange(len(ck))
+    for j, split in enumerate(("id", "ood")):
+        cs = d10d[split]["comparadores"]
+        meio = [cs[k]["delta"] for k in ck]
+        err = [[cs[k]["delta"] - cs[k]["ic95"][0] for k in ck],
+               [cs[k]["ic95"][1] - cs[k]["delta"] for k in ck]]
+        ax[1, 1].barh(y + (j - 0.5) * 0.36, meio, 0.36, xerr=err,
+                      color=["tab:blue", "tab:purple"][j], label=split.upper())
+    ax[1, 1].axvline(0, color="black", lw=.8)
+    ax[1, 1].set_yticks(y); ax[1, 1].set_yticklabels(ck, fontsize=7)
+    ax[1, 1].set_title("Δ pareado: E10d − controle forte (IC95%) — todos desfavoráveis", fontsize=9)
+    ax[1, 1].legend(fontsize=7); ax[1, 1].grid(alpha=.3, axis="x")
+    fig.suptitle("E10d — treinamento adversarial × atacante neural, 24 bits (docs/11)", fontsize=10)
+    fig.tight_layout(); fig.savefig(os.path.join(FIG, "e10d_controles.png"), dpi=130); plt.close(fig)
+
+    # 12) E10e_repl — réplica do protocolo de Pareto ev 5/6 (docs/12)
+    d10e = res["E10e_repl"]
+    fig, ax = plt.subplots(2, 2, figsize=(11, 7))
+    for j, split in enumerate(("id", "ood")):
+        par = set(d10e[split]["pareto"])
+        for p in d10e[split]["pontos"]:
+            is_par = p["lambda"] in par
+            ax[0, j].scatter(p["score_medio"], p["privacidade"],
+                             c=("tab:red" if is_par else "tab:gray"),
+                             s=(55 if is_par else 32), zorder=3)
+            ax[0, j].annotate(("%g" % p["lambda"]), (p["score_medio"], p["privacidade"]),
+                              fontsize=7, xytext=(3, 3), textcoords="offset points")
+        ax[0, j].set_title(f"{split.upper()} — Pareto nosso {sorted(par)} × ev 5 "
+                           f"{d10e['protocolo']['ev5'][split + '_pareto']}", fontsize=9)
+        ax[0, j].set_xlabel("score médio (maior = melhor)"); ax[0, j].set_ylabel("privacidade P")
+        ax[0, j].grid(alpha=.3)
+    for j, split in enumerate(("id", "ood")):
+        par = d10e["pareado_l1_vs_l003"][split]
+        for k, (ck, cor, off) in enumerate((("utilidade_delta_l1_menos_l003", "tab:blue", -0.18),
+                                            ("atacante_neural_delta_l1_menos_l003", "tab:orange", 0.18))):
+            m = par[ck]["delta"]; ic = par[ck]["ic95"]
+            ax[1, j].bar([j / 2 + off], [m], 0.16, yerr=[[m - ic[0]], [ic[1] - m]],
+                         color=cor, capsize=4,
+                         label=("utilidade ΔJ" if k == 0 else "atacante neural ΔA"))
+        ax[1, j].axhline(0, color="black", lw=.8); ax[1, j].grid(alpha=.3, axis="y")
+        ax[1, j].set_xticks([0]); ax[1, j].set_xticklabels(["λ=1 − λ=0,003"])
+        ax[1, j].set_title(f"{split.upper()} — teste pareado por semente (IC95%)", fontsize=9)
+        ax[1, j].legend(fontsize=7)
+    fig.suptitle("E10e_repl — réplica do protocolo Pareto (ev 5/6), 200 sementes deste terminal (docs/12)",
+                 fontsize=10)
+    fig.tight_layout(); fig.savefig(os.path.join(FIG, "e10e_repl.png"), dpi=130); plt.close(fig)
 
 
 if __name__ == "__main__":

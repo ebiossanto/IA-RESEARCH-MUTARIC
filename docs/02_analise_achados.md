@@ -13,8 +13,13 @@ Sementes fixas: treino 1, validação 2, teste 3; τ escolhido **na validação*
 > MUTARIC ev e o **E10** (paridade de orçamento) estão em
 > `docs/09_analise_mutaric_ev.md`; e a segunda auditoria, **MUTARIC ev 2**, com o
 > **E10b** (controles fortes de memória — o resíduo não vence), está em
-> `docs/10_analise_mutaric_ev2.md`. Os achados A2, A3 e A5
-> ganharam notas de status apontando para lá.
+> `docs/10_analise_mutaric_ev2.md`; e a terceira, **MUTARIC ev 3/4**, com o
+> **E10d** (adversarial + atacante neural — reduz vazamento, mas perde para
+> os controles), está em `docs/11_analise_mutaric_ev3_ev4.md`; e a quarta,
+> **MUTARIC ev 5/6** (zip sem código → 286/286 checagens aritméticas), com a
+> nossa replicação **E10e_repl** do protocolo de Pareto (200 sementes,
+> pareada por semente), está em `docs/12_analise_mutaric_ev5_ev6.md`.
+> Os achados A2, A3 e A5 ganharam notas de status apontando para lá.
 
 ---
 

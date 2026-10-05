@@ -130,6 +130,13 @@ por um experimento alheio. **Adotado** como limitação escrita
    a vencer o recorrente, mas o tamanho dos Δ é sensível.
 4. **Decodificador simples** (limiar por canal): "≈ acaso" vale para *esse*
    decodificador — o documento declara isso ("pelo decodificador testado").
+   **Atualização do ciclo 8** (`docs/11` §4): a auditoria ev 3/4 mostrou que
+   os ataques *lineares* do E10d eram **degenerados** (uint8 em `2*Y−1`, alvos
+   `{255,1}`) e mesmo assim um atacante neural achou 55,6% de reconstrução —
+   ou seja, "testes lineares ≈ acaso" pode significar "o teste não testa
+   nada". A ressalva aqui permanece (os números de cima vêm do limiar) e a
+   pergunta "um atacante neural/temporal acha o que o limiar não acha?" virou
+   a pendência **P1.11**.
 5. **Ambiente deles é sintético e construído** (hot-spots de variância);
    a refutação é correta *dentro* desse ambiente e não se auto-generaliza —
    como também o nosso E10 vale no nosso. A ponte entre os dois ambientes é
@@ -185,6 +192,13 @@ memória nem as memórias fortes.**
   reconstrução (`docs/04`). Candidato natural a E12, mantido o E11
   (política aprendida) definido em `docs/09` §8.
 
+> **Continuação (ciclo 8, `docs/11`):** a terceira auditoria (ev 3/4)
+> executou a versão **linear** dessa mesma ideia (E10c externo) e o efeito
+> sobre o score foi **nulo** (ICs contêm zero; λ alto ainda elevou o
+> vazamento) — daí a atualização do P2.7 para penalidade **adversarial**
+> (`docs/04`). Da auditoria saíram também **P1.11** (atacante neural e
+> temporal contra os nossos estados) e o E10d portado (`docs/11`).
+
 ---
 
 ## Summary (EN)
@@ -215,3 +229,8 @@ variance-hot-spot environment. New roadmap items: **P1.10** (strong
 controls + OOD + paired bootstrap CI inside *our* E10 environment) and
 **P2.7** (E10c predictive compressed residue under a non-reconstruction
 constraint). Status: 32 tests, 10 figures, E1–E10 + E10b, docs/00–docs/10.
+*Cycle-8 continuation:* the third audit (`docs/11`) independently implemented
+the **linear** version of P2.7's idea (external E10c) and got a **null**
+effect (CIs contain zero; high λ even increased leakage) — P2.7 is now
+specified with an **adversarial** penalty; that cycle also added **P1.11**
+(neural/temporal attackers against our own states) and ported E10d.

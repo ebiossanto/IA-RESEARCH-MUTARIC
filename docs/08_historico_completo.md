@@ -26,7 +26,7 @@ imagem, e a imagem é relida por um código que decodifica família, procedênci
 carga — com a pergunta constante: *isso é leitura relacional ou reconhecimento de
 um roteiro?* (`docs/02` A6).
 
-## 2. Cronologia — oito ciclos em um dia (04/10/2026)
+## 2. Cronologia — dez ciclos em um dia (04/10/2026)
 
 | ciclo | commit | o que mudou |
 |---|---|---|
@@ -37,7 +37,9 @@ um roteiro?* (`docs/02` A6).
 | **4** | `d88ef3f` | **GitHub + CI**: repositório `ebiossanto/IA-RESEARCH-MUTARIC` (privado na época; **tornado público** em 04/10/2026), `.github/workflows/ci.yml` (Windows + Linux, 27/27), badge, revisão de consistência (P0.5 fecha) |
 | **5** | `d29ac4c` | **organização final**: `docs/00` (índice), `docs/07` (continuidade), `docs/08` (este), auditoria de consistência entre documentos, chave `tau_medio_landauer_off` no JSON (ajustes seguintes: `abfe920`, `b2d0759`) |
 | **6** | `742a811` | **ciclo MUTARIC ev** (`docs/09`): auditoria externa analisada com provas — 5 correções adotadas (2 redacionais no código/docs, 2 viram **P1.9**/**P2.6**), **E10** (paridade de orçamento, 3/3 condições), coleta **real** desta máquina (`maquina.json`, `telemetria_real.json`), testes 27 → **30**, figuras 8 → **9** |
-| **7** (atual) | — | **ciclo MUTARIC ev 2** (`docs/10`): segunda auditoria externa executada e reproduzida (**58/58 números**) — **E10b** (controles fortes de memória, 24 bits, ID + OOD) portado com veredito nulo publicado (*o resíduo não vence memórias fortes*), limitação do comparador no `docs/09` §7.6, novas pendências **P1.10**/**P2.7**, testes 30 → **32**, figuras 9 → **10** |
+| **7** | `23572f4` | **ciclo MUTARIC ev 2** (`docs/10`): segunda auditoria externa executada e reproduzida (**58/58 números**) — **E10b** (controles fortes de memória, 24 bits, ID + OOD) portado com veredito nulo publicado (*o resíduo não vence memórias fortes*), limitação do comparador no `docs/09` §7.6, novas pendências **P1.10**/**P2.7**, testes 30 → **32**, figuras 9 → **10** |
+| **8** | — | **ciclo MUTARIC ev 3/4** (`docs/11`): terceira auditoria externa executada e reproduzida (**JSON idêntico, 0 diferenças em 129 números; 113/113 checagens**) — **E10d** (adversarial + atacante neural, 24 bits) portado com dois vereditos publicados (*o treinamento adversarial reduz reconstrução neural sem custo, mas perde para todos os controles fortes* — H4 refutada; e a **ressalva própria** de que os ataques lineares deles são degenerados — uint8), E10c/E10e **sem código** (não reproduzíveis), nova pendência **P1.11** + atualização de **P2.7**, testes 32 → **34**, figuras 10 → **11** |
+| **9** (atual) | — | **ciclo MUTARIC ev 5/6** (`docs/12`): quarta auditoria externa — zip **só com saídas, sem código** → **286/286 checagens aritméticas** (tabelas × JSON × CSV, fórmulas de P, Pareto recalculado, Welch/z do ev 6 recalculados com `scipy`) + **replicação NOSSA** `E10e_repl` executada **neste terminal** com as mesmas 200 sementes do ev 5 (163,6 s, pareada por semente) — vereditos: *Pareto ID deles **contido** no nosso; Pareto OOD exato **não repetido** (mesma prateleira P = 1); λ = 1 vaza mais **confirmado** com o pareado que o ev 6 não pôde fazer*; `docs/04` ganhou o **registro detalhado de erros, acertos e retomadas de caminho** (ciclos 0–9); testes 34 → **36**, figuras 11 → **12** |
 
 Linha do tempo interna (ciclos 1–3): as datas e o "antes/depois" de cada correção
 estão em `docs/01` §7, com a nota de cronologia sobre as correções do E5/E6.
@@ -60,6 +62,8 @@ estão em `docs/01` §7, com a nota de cronologia sobre as correções do E5/E6.
 | **E9** | a cifra com chave = resíduo tem quantos bits? | varredura de `R_L ∈ [0,1)` passo 10⁻⁵ + força bruta | **100001 chaves = 16,61 bits**; chave `0,03452` recuperada em **≈0,3 s** nesta máquina (3453 candidatos; `segundos` declarado não determinístico — **`E9_chave_residuo`**) |
 | **E10** | com orçamento IGUAL, o resíduo supera memória convencional? | 4 agentes (sem memória / ruído / conteúdo / resíduo), 2 regimes de distúrbio, comparação pareada | **3/3 condições**: reconstrói menos conteúdo (RMSE **0,1018** vs **0,0827**), MI excedente **+0,0165 bits** (ruído ≈ 0), J(AR) > J(AM) (**t ≈ 12** e **t ≈ 6**) — mas **AR ≈ A0** (nulo): supera a memória convencional, não a ausência de memória (**`E10_orcamento`**) |
 | **E10b** | e contra memórias **fortes** de igual orçamento (24 bits)? | 6 memórias (sem / assinada / magnitude / resíduo quadrático / janela / recorrente aprendido), 200 sementes pareadas, IC bootstrap, ID + OOD | **formulação forte refutada**: o resíduo perde para magnitude (ID **−0,0001272**) e para o recorrente (ID **−0,0001904**, OOD **−0,0003150**; ICs fora de zero); vence só a janela no ID; melhor = recorrente; nenhuma memória recupera o sinal (≈ **0,5**) (**`E10b_controles`**) |
+| **E10d** | treinamento adversarial reduz reconstrução neural sem custo? e vence os controles? | gradiente reverso + STE em codificador sigmoidal de 24 bits, λ varrido só na validação (fallback: nenhum atingiu 0,515), atacante neural externo, 160 sementes, IC bootstrap, ID + OOD | **H3 confirmada, H4 refutada**: ΔJ **+2,4018×10⁻⁵** ID / **+3,8618×10⁻⁵** OOD com ICs estritamente positivos e neural 0,556→0,522 / 0,580→0,555; mas perde para os 4 controles fortes nos dois splits (ICs negativos, ~0% de vitórias); ressalva própria: ataques lineares **degenerados** (uint8, linear == quadrático em 9/9) (**`E10d_controles`**) |
+| **E10e_repl** | as alegações do E10e (ev 5/6) valem numa implementação **independente**, com as mesmas 200 sementes deles? | replicação nossa do protocolo de Pareto: 8 λ × ID/OOD, sementes 70000–70199 do ev 5, atacante neural (2 inits), **pareado por semente** com IC bootstrap, 163,6 s | Pareto ID **{0,1; 0,3; 1}** (**contém** o deles {0,3; 1}); Pareto OOD **{0,01}** vs deles {0,003} — mesma prateleira P = 1, **ponto exato não repetido**; λ = 1 melhor score ID **−0,00362529** e pior privacidade nos 4 cantos; pareado: ΔA OOD **+0,00615** IC [0,00460; 0,00767] > 0, ΔJ ID **+4,38×10⁻⁶** / OOD **−1,20×10⁻⁵** (ICs fora de zero) (**`E10e_repl`**) |
 
 Fora dos "E": `varredura_tau_validacao` (τ=**0,7** escolhido **na validação**, 0,9256
 com 139 grafos) e `demo_mensagem` ("Ganhei!", 11 glifos, 11/11 símbolos até σ=0,30).
@@ -94,6 +98,29 @@ com 139 grafos) e `demo_mensagem` ("Ganhei!", 11 glifos, 11/11 símbolos até σ
   vence*), o comparador fraco virou limitação escrita (`docs/09` §7.6), a
   parte não fornecida (`e10.py`, testes) ficou **não verificável**, e da
   auditoria saíram **P1.10** e **P2.7**.
+- **Ciclo 8 (`docs/11`):** verificação externa da terceira auditoria
+  **MUTARIC ev 3/4** — o `e10d.py` deles executado aqui (JSON publicado
+  **idêntico**) e portado como **E10d**; dois vereditos publicados com a
+  mesma proeminência (H4 refutada: *o adversarial perde para todos os
+  controles fortes*; e a **ressalva própria** de que os ataques lineares
+  deles são degenerados por uint8 — H1 confirmada com ressalva), E10c/E10e
+  **sem código** (só checagem aritmética interna), e da auditoria saíram
+  **P1.11** (atacante neural/temporal nos nossos estados) e a atualização
+  de **P2.7** (a versão linear de não reconstrução já deu nulo lá fora).
+- **Ciclo 9 (`docs/12`):** verificação externa da quarta auditoria
+  **MUTARIC ev 5/6** — o zip veio **só com saídas, sem código**, então a
+  regra virou dois braços: **286/286 checagens aritméticas** (tabelas ×
+  JSON × CSV, fórmulas, Pareto recalculado, Welch/z do ev 6 recalculados
+  com `scipy`) e **replicação própria declarada** — `E10e_repl`, o
+  protocolo descrito rodado **neste terminal** com as mesmas 200 sementes
+  do ev 5, pareado por semente. Vereditos publicados com a mesma
+  proemência dos confirmados: *o Pareto ID deles está **contido** no
+  nosso; o Pareto OOD exato **não se repetiu** (mesma prateleira P = 1,
+  ponto diferente); λ = 1 confirmado como melhor score ID e pior em
+  privacidade; maior vazamento OOD de λ = 1 confirmado com o **teste
+  pareado que o ev 6 não pôde fazer** (ele não salvou o dado por semente)*.
+  O `docs/04` ganhou o **registro detalhado de erros, acertos e retomadas
+  de caminho** dos ciclos 0–9.
 
 ## 4. Mudanças de direção
 
@@ -163,7 +190,7 @@ Os achados que **pioraram a própria história** e por isso estão publicados:
    `docs/00` §Convenções e `docs/07` §3.
 2. **Resultado nulo publicado com a mesma proeminência** do positivo (critério de
    pronto, `docs/04`).
-3. **Os números publicados não mudam silenciosamente** — 32 testes de regressão e
+3. **Os números publicados não mudam silenciosamente** — 36 testes de regressão e
    CI em duas plataformas; campos não determinísticos são **declarados**
    (`E9.campos_nao_deterministicos`, `docs/09` §3).
 4. **I/O e telemetria fora do núcleo** — simulação determinística e testável.
@@ -192,25 +219,41 @@ Os achados que **pioraram a própria história** e por isso estão publicados:
   liberdade sem análise de sensibilidade; o decodificador é simples ("≈ acaso"
   vale para *esse* decodificador); o ambiente deles é sintético (hot-spots de
   variância) e a refutação vale dentro dele — a ponte com o nosso é **P1.10**.
+- **`docs/11` §6 (E10d):** E10c e E10e vieram **sem código** — nada deles é
+  reproduzível por execução (só checagem aritmética interna); E10e é
+  exploratório por construção (24 sementes, λ inspecionados no teste —
+  limitação declarada pelos próprios autores); H4 refuta o **codificador**
+  do E10d (sigmoidal + STE + gradiente truncado), não a técnica adversarial;
+  e a ressalva do decodificador do E10b ganhou evidência externa — os testes
+  lineares do E10d são degenerados (uint8), o que torna **P1.11** (atacante
+  neural/temporal nos nossos estados) uma pendência explícita.
+- **`docs/12` §2/§6 (E10e_repl):** sem código deles, a replicação **não é**
+  reprodução dos números do ev 5/6 — é implementação independente que testa
+  alegações (inicialização, otimizador e ataques são escolhas nossas,
+  declaradas); o Pareto OOD exato deles **não se repetiu** aqui; e o
+  protocolo deles descumpriu 5 de 7 pontos (λ não fixado antes do teste,
+  sem ICs, sem dado por semente, sem atacante temporal — ninguém rodou).
 - **`docs/02` A2(b) / A5:** histerese de τ e forma canônica do grafo **ainda
   abertas** (P1.8 / P1.5).
 
 ## 6. Estado atual e fila
 
 - **Repositório:** `github.com/ebiossanto/IA-RESEARCH-MUTARIC` (**público**, `main`);
-  CI verde em Windows e Ubuntu (32/32); histórico completo em `git log` (8 ciclos, §2).
+  CI verde em Windows e Ubuntu (36/36); histórico completo em `git log` (10 ciclos, §2).
 - **Código:** 6 módulos (`mundo`, `glifo`, `residuo`, `agente`, `homeostase`,
-  `experimentos`) + `tests/` (32) + `run_all.py`.
-- **Saídas:** 10 figuras em `figs/`, `resultados/resultados.json` (determinístico;
+  `experimentos`) + `tests/` (36) + `run_all.py`.
+- **Saídas:** 12 figuras em `figs/`, `resultados/resultados.json` (determinístico;
   `E9.segundos` está declarado em `campos_nao_deterministicos` e varia entre
   máquinas), `resultados/maquina.json` + `resultados/telemetria_real.json`
   (coleta real, `deterministico: false`, nunca regressada).
-- **Documentos:** `docs/00` a `docs/10` (onze), `README.md` (PT) e `README.en.md`.
+- **Documentos:** `docs/00` a `docs/12` (treze), `README.md` (PT) e `README.en.md`.
 - **Fila:** P1.1 baseline séria → P1.2 teste de hipótese → P1.3 transformações
-  perceptivas → P1.4–P1.10 (novo: protocolo hierárquico + **controles fortes
-  de memória no E10**) → P2.1 `teoa/core.py` de
+  perceptivas → P1.4–P1.11 (novos: protocolo hierárquico, **controles fortes
+  de memória no E10** e **atacante neural/temporal nos nossos estados**) →
+  P2.1 `teoa/core.py` de
   verdade → P2.3 loop de dois agentes → P2.6 (novo: agente sem evento externo)
-  → P2.7 (novo: E10c, resíduo preditivo com não reconstrução) →
+  → P2.7 (E10c, resíduo preditivo com não reconstrução — já com penalidade
+  adversarial, `docs/11` §5) →
   P3 publicação. Pendências externas: repo PIXEL, licença.
 - **Como retomar:** `docs/07_continuidade.md`.
 
@@ -231,6 +274,8 @@ Os achados que **pioraram a própria história** e por isso estão publicados:
 | `E9_chave_residuo` | espaço de chave, bits, força bruta (`segundos` = não determinístico, declarado) |
 | `E10_orcamento` | E10: J pareado (2 regimes), RMSE de reconstrução, MI excedente, 3 condições, `veredito` |
 | `E10b_controles` | E10b: scores/perdas das 6 memórias (ID + OOD), Δ pareados com IC bootstrap, decodificação, `melhor_score` |
+| `E10d_controles` | E10d: varredura de validação + `lambda_escolhido` (fallback), sem/com adversário (ID + OOD) com Δ e IC, 4 comparadores fortes, ataques linear/quadrático/neural |
+| `E10e_repl` | réplica do protocolo Pareto: pontos ID/OOD (score, neural, P, execuções), fronteiras, teste pareado por semente (utilidade + atacante, com IC) e `comparacao_ev5_ev6` |
 | `demo_mensagem` | "Ganhei!" end-to-end |
 
 ---
@@ -257,9 +302,27 @@ machine telemetry collected (tests → 30, figures → 9); cycle 7 (`docs/10`)
 verified the second audit "MUTARIC ev 2" by **execution** — its `e10b.py` run
 here with **58/58 numbers reproduced** and ported as E10b, refutation of the
 strong claim published as a null result, comparator weakness written into
-`docs/09` §7.6, new queue items P1.10/P2.7 (tests → 32, figures → 10).
+`docs/09` §7.6, new queue items P1.10/P2.7 (tests → 32, figures → 10);
+cycle 8 (`docs/11`) verified the third audit "MUTARIC ev 3/4" by **execution**
+— its `e10d.py` run here regenerating the published JSON **identical (0
+differences in 129 numbers)** and ported as E10d, two verdicts published with
+equal prominence (H4 refuted: *the adversarial variant loses to every strong
+control*; plus our own caveat that their **linear attackers are degenerate**
+(uint8 wraparound), so H1 stands only with that caveat), E10c/E10e shipped
+**without code** (unverifiable by execution), new queue item P1.11 and P2.7
+updated (tests → 34, figures → 11); cycle 9 (`docs/12`) handled the fourth
+external package "MUTARIC ev 5 / ev 6" — shipped **outputs only (JSON, CSV,
+PNG), no code** — with **286/286 arithmetic checks** (document × JSON × CSV,
+privacy formulas, Pareto frontiers recomputed, Welch and z-tests recomputed
+with `scipy`) plus **our own replication of the protocol executed on this
+terminal** (`E10e_repl`, the same 200 seeds, paired per seed): their ID
+Pareto {0.3; 1} **is contained in ours**, **their exact OOD Pareto did not
+repeat** (same P = 1 plateau, different point — published with equal
+prominence), and λ = 1's larger OOD leakage was confirmed with the **paired
+test ev 6 could not run** (tests → 36, figures → 12; `docs/04` also gained
+a detailed record of errors, successes and course changes for cycles 0–9).
 
-**Studies (E1–E10 + E10b plus the σ curve):** provenance in relations (0.919 vs 1.000
+**Studies (E1–E10 + E10b + E10d + E10e_repl plus the σ curve):** provenance in relations (0.919 vs 1.000
 baseline — the relational code does *not* win on accuracy, it wins on affine
 invariance); family by level vs polarity (polarity = copied label); payload
 capacity vs robustness (7.67 bits → 0.580 at σ=0.40 vs 2.58 bits → 0.927);
@@ -277,7 +340,18 @@ not the absence of memory (published as a partial null result); and **E10b**,
 the strong-control replication — against magnitude EMA, short window and
 learned recurrent state at equal 24-bit budget the residue **loses** in both
 splits (CIs exclude zero, best agent = learned recurrent), so the strong
-formulation is refuted in that environment (published as a null result too).
+formulation is refuted in that environment (published as a null result too);
+and **E10d**, the adversarial replication — adversarial training with a
+straight-through encoder **does** reduce neural reconstruction without cost
+within its own architecture (ΔJ > 0 with strictly positive CIs in both
+splits, neural attacker 0.556 → 0.522 ID and 0.580 → 0.555 OOD) **but loses
+to every strong E10b control** (H4 refuted; all CIs negative, ≈0 % wins),
+and our verification found their linear/quadratic attackers **degenerate**
+(uint8 wraparound: targets {255,1}, linear == quadratic in 9/9 comparisons),
+which is why H1 is accepted only with that caveat; and **E10e_repl**, our
+replication of the Pareto protocol on the same 200 seeds — their ID Pareto
+contained in ours, the exact OOD Pareto point **not repeated** (published as
+such), λ = 1's leakage confirmed with the paired per-seed bootstrap.
 
 **Direction changes:** six external refusals (PIXEL repo not found, cipher,
 "Layer-3" validation, always-on telemetry, Walsh spreading, rewriting the data
@@ -289,7 +363,10 @@ loses to a trivial baseline" and two real bugs), mid-course redefinitions
 prominently as positive ones; no silent change to published numbers; I/O and
 telemetry outside the core; acceptance criteria for every item).
 
-**Now:** 32 tests, 11 documents, 10 figures, CI green; the queue is P1
+**Now:** 36 tests, 13 documents, 12 figures, CI green; the queue is P1
 (baselines + bootstrap CIs + perceptual transformations, plus the new P1.9
-hierarchical protocol and P1.10 strong memory controls) then P2 (the real TEOA core, plus P2.6/P2.7). Resume with
+hierarchical protocol, P1.10 strong memory controls and P1.11 neural/temporal
+attackers against our own states) then P2 (the real TEOA core, plus P2.6/P2.7 —
+P2.7 already escalated to an adversarial penalty after the linear version came
+out null in the external E10c). Resume with
 `docs/07_continuidade.md`.

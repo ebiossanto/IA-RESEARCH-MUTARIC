@@ -21,9 +21,11 @@ episode (6 channels × 32 steps)      TEOA side: state, distance to target s*
 
 **Status: exploratory prototype.** The six experiments (E1–E6), three external
 verification runs (E7–E9, from the attached MutaCore document), **E10** (equal
-budget, from the MUTARIC ev audit) and **E10b** (strong memory controls, from
-the MUTARIC ev 2 audit) run deterministically
-and are covered by **32 smoke tests**, but the affective world is **hand-scripted**
+budget, from the MUTARIC ev audit), **E10b** (strong memory controls, from
+the MUTARIC ev 2 audit), **E10d** (adversarial training + neural attacker,
+from the MUTARIC ev 3/4 audit) and **E10e_repl** (our own replication of the
+Pareto protocol, from the MUTARIC ev 5/6 audits) run deterministically
+and are covered by **36 smoke tests**, but the affective world is **hand-scripted**
 (`mundo.py` writes the provenances as scenarios) and the reader **re-reads what the
 writer stored literally**. Read `docs/02_analise_achados.md` before quoting any
 number — it lists what the results do **not** support.
@@ -34,16 +36,16 @@ number — it lists what the results do **not** support.
 README.md / README.en.md     this file / Portuguese version
 requirements.txt .gitignore  numpy, scipy, matplotlib
 run_all.py                   entry point: tests + experiments
-.github/workflows/ci.yml     CI: 32 tests on Windows + Linux
+.github/workflows/ci.yml     CI: 36 tests on Windows + Linux
 ricemotions/
   mundo.py                   TEOA side: episodes, valence, labels   (no I/O)
   glifo.py                   PIXEL/RIC side: write, read, graphs     (no I/O)
   residuo.py                 E5: residue generation/routing, Landauer, τ
   agente.py                  E6: transition + two-way loop (S*, w, τ fed back)
   homeostase.py              MutaCore: endogenous residue, telemetry → S*/τ, policy
-  experimentos.py            E1–E10 + E10b, figures, the only module with I/O
-tests/test_smoke.py          contracts + regression of published numbers (32)
-docs/                        11 documents: index · architecture · findings · bridge · roadmap · residue/agency · MutaCore · continuity · history · MUTARIC ev and ev 2 audits
+  experimentos.py            E1–E10 + E10b + E10d + E10e_repl, figures, the only module with I/O
+tests/test_smoke.py          contracts + regression of published numbers (36)
+docs/                        13 documents: index · architecture · findings · bridge · roadmap · residue/agency · MutaCore · continuity · history · MUTARIC ev, ev 2, ev 3/4 and ev 5/6 audits
 figs/  resultados/           generated figures and resultados/resultados.json
                              (+ maquina.json and telemetria_real.json: real machine
                              collection, non-deterministic, never regressed)
@@ -53,13 +55,13 @@ figs/  resultados/           generated figures and resultados/resultados.json
 
 ```bash
 pip install -r requirements.txt
-python run_all.py --so-testes    # 32 sanity tests (seconds)
-python run_all.py                # tests + E1–E10 + E10b + figures (a few minutes)
+python run_all.py --so-testes    # 36 sanity tests (seconds)
+python run_all.py                # tests + E1–E10 + E10b + E10d + E10e_repl + figures (~15 min)
 python -m ricemotions.experimentos --telemetria   # real machine collection (optional,
                                                   # needs psutil; not regressed)
 ```
 
-Outputs: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore,e10_orcamento,e10b_controles}.png`
+Outputs: `figs/{glifos,grafos_prototipo,robustez,carga,curva_sigma,residuo,agencia,mutacore,e10_orcamento,e10b_controles,e10d_controles,e10e_repl}.png`
 and `resultados/resultados.json`; the optional collection writes
 `resultados/maquina.json` and `resultados/telemetria_real.json` (non-deterministic).
 
@@ -181,6 +183,68 @@ items: **P1.10** (strong controls inside *our* E10 environment) and **P2.7**
 The document's first part (`e10.py`, their test files) was **not provided**
 and is declared unverifiable.
 
+## Fourth external audit — "MUTARIC ev 3/4" (`docs/11`, in Portuguese)
+
+Same rule: the attached `e10d.py` was **executed on this machine** and
+regenerated the published JSON **identical — 0 differences in 129 numbers**;
+the document's tables passed **113/113 checks**; the code was ported as
+**E10d** (`E10d_controles`, 2 new tests). **E10c and E10e shipped no code**
+and are declared **unverifiable by execution** (internal arithmetic checks
+only).
+
+E10d asks whether adversarial training (straight-through sigmoidal encoder,
+24 bits, λ selected on validation only, external neural attacker, 160 seeds,
+paired bootstrap CIs) reduces neural reconstruction *without cost* — and
+whether it then beats the strong controls:
+
+| result | ID | OOD |
+|---|---|---|
+| ΔJ (adversarial − none), 95 % CI | **+2.4018e-5** [+2.0822e-5, +2.7210e-5] | **+3.8618e-5** [+3.3304e-5, +4.4425e-5] |
+| neural attacker, none → adversarial | 0.55633 → 0.52216 | 0.57977 → 0.55542 |
+| vs learned recurrent E10b (Δ) | **−0.001067** (unfavorable) | **−0.001944** (unfavorable) |
+
+**Published verdicts (same prominence):** the adversarial variant **reduces
+neural reconstruction without cost inside its own architecture** (H3: CIs
+strictly positive in both splits) **but loses to every strong E10b control**
+(**H4 refuted**: 8/8 unfavorable comparisons, negative CIs, ≈0 % wins), and
+neural reconstruction stays above 50 % even with the adversary (H2 only
+partial). λ was chosen by **fallback** — no λ met the 0.515 limit (declared
+as fallback, not as a satisfied constraint).
+
+**Our own caveat, found during verification:** their linear/quadratic
+attackers are **degenerate** — `T = 2Y−1` on uint8 wraps to `{255,1}`, so
+the ridge predicts >99.5 % positive and scores ≈ the base rate (linear ==
+quadratic in 9/9 published comparisons). "Linear ≈ chance" there measures
+nothing; the **neural** attacker is the real evidence. This reinforces the
+decoder caveat in `docs/10` §6.4 and became roadmap item **P1.11**
+(neural/temporal attackers against *our* states). The **linear** version of
+P2.7's idea was independently implemented by this audit (E10c) and came out
+**null**, so P2.7 is now specified with an adversarial penalty.
+
+## Fifth external verification — "MUTARIC ev 5 / ev 6" (`docs/12`, in Portuguese)
+
+Same rule — but the `MUTARIC_E10e_200_SEMENTES.zip` shipped **outputs only
+(JSON, CSV, PNG), no code**. So: (1) **286/286 arithmetic checks** — the ev 5
+tables × JSON × CSV, the privacy formulas `P = 1 − 2·max(0, A−0.5)`, the Pareto
+frontiers recomputed by non-domination, and every ev 6 statistic (Welch t, df,
+CIs, Cohen's d, proportion z-tests) recomputed with `scipy`; and (2) **our own
+replication of the protocol** — `E10e_repl` (2 new tests) — executed **on this
+terminal with the same 200 seeds** as ev 5 (70000–70199), 163.6 s, declared as
+ours: it tests their claims, it does not reproduce their numbers.
+
+| claim | verdict in our replication (200 seeds, here) |
+|---|---|
+| ID Pareto = {0.3; 1} | **contained in** ours {0.1; 0.3; 1} |
+| OOD Pareto = {0.003} | **not repeated point-wise** — ours {0.01} sits on the same P = 1 plateau |
+| λ = 1: best ID score, worst privacy | **confirmed** (−0.00362529; P = 0.99138) |
+| λ = 1 leaks more OOD (ev 6, z = 3.7790) | **confirmed** with the paired per-seed test: ΔA = +0.00615, CI [0.00460, 0.00767] |
+| "no detectable utility difference" (ev 6, Welch) | the paired test finds small but **nonzero** differences (ID +4.38e-6, OOD −1.20e-5) — both sides published |
+
+Full verdicts, the deviations from their 7-point protocol (λ not fixed before
+the test, no CIs, no per-seed data, no temporal attacker — still nobody ran)
+and the reinforced roadmap items (**P3.4**, **P1.9**, **P1.11**) are in
+`docs/12` (Portuguese).
+
 ## Key findings (details in `docs/02_analise_achados.md`)
 
 1. **The relational code does not beat trivial baselines.** `level+delta` reaches
@@ -246,14 +310,17 @@ not a programming problem. Full argument in `docs/05` §8.
 See `docs/04_plano_desenvolvimento.md` (P0–P3, each with acceptance criteria).
 **P0.1–P0.5 are done** (isomorphism-aware payload, robust soft decoding,
 accuracy-vs-σ curve, clean `run_all.py`, CI on Windows + Linux), and the
-MUTARIC ev and ev 2 audits are closed (`docs/09`, `docs/10`); **P1** remains: real
+MUTARIC ev, ev 2, ev 3/4 and ev 5/6 verifications are closed (`docs/09`, `docs/10`,
+`docs/11`, `docs/12`); **P1** remains: real
 baselines, bootstrap hypothesis tests, perceptual transformations, a neutral band,
 **P1.7** (payload as a channel: spreading + decoder — the only MutaCore idea
-left as future work), **P1.9** (hierarchical protocol) and **P1.10** (strong
-memory controls inside our E10 environment). Then **P2**: wire the
+left as future work), **P1.9** (hierarchical protocol), **P1.10** (strong
+memory controls inside our E10 environment) and **P1.11** (neural/temporal
+attackers against our own states — from the ev 3/4 audit). Then **P2**: wire the
 actual TEOA core, a two-agent communication loop, **P2.6** (agent without
 synthetic external events) and **P2.7** (E10c, predictive residue with
-non-reconstruction). How to resume: `docs/07_continuidade.md`.
+non-reconstruction — now specified with an **adversarial** penalty after the
+linear version came out null in the external E10c). How to resume: `docs/07_continuidade.md`.
 
 ## Relation to the TEOA project
 

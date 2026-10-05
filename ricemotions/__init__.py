@@ -14,7 +14,7 @@ Três camadas, três responsabilidades:
     menor distância). É aqui que mora o lado PIXEL.
 
 ``ricemotions.experimentos``
-    Os **experimentos** E1-E10 e E10b e as figuras. Só aqui existe I/O de disco.
+    Os **experimentos** E1-E10, E10b, E10d, E10e_repl e as figuras. Só aqui existe I/O de disco.
 
 Uso::
 

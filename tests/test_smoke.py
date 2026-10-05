@@ -492,6 +492,208 @@ def test_e10b_orcamento_determinismo_e_separacao():
     assert a["protocolo"]["bits_mutaveis"] == 24
 
 
+def test_e10d_reproduz_o_documento_mutaric_ev3_ev4():
+    """E10d (auditoria MUTARIC ev 3/4 — docs/11): o port regera as tabelas
+    publicadas. Vereditos: (1) o atacante neural acha conteúdo que os testes
+    lineares não medem (55,63%/57,98% sem adversário); (2) o treinamento
+    adversarial reduz a reconstrução neural e melhora o score nos dois splits;
+    (3) o E10d perde para TODOS os controles fortes do E10b — H4 refutada."""
+    from ricemotions import experimentos as E
+    r = E.e10d_controles()
+    p = r["protocolo"]
+    assert p["bits_mutaveis"] == 24 == E.E10B_BUDGET
+    assert p["lambdas"] == list(E.E10D_LAMBDAS)
+    assert p["treino"] == "100000.." and p["teste"] == "50000.. disjuntos"
+    # varredura de validação publicada (docs/11 §3): score e atacante neural
+    # (tolerâncias absorvem flutuação de plataforma da CI sem perder os dígitos
+    # publicados: score ~1e-7, acurácia ~1e-4 = ~17 rótulos em 172.800)
+    tab = {"0.0": (-0.00447735, 0.54342), "0.01": (-0.00447714, 0.54288),
+           "0.03": (-0.00447671, 0.53667), "0.1": (-0.00447100, 0.53866),
+           "0.3": (-0.00445562, 0.52467)}
+    for lam, (sc, neu) in tab.items():
+        v = r["varredura_validacao"][lam]
+        assert abs(v["score_medio"] - sc) < 1e-7, (lam, v["score_medio"])
+        assert abs(v["ataques"]["neural"] - neu) < 1e-4, (lam, v["ataques"]["neural"])
+    # seleção POR FALLBACK: nenhum λ atingiu o limite 0,515; escolheu o maior score
+    assert all(r["varredura_validacao"][k]["ataques"]["neural"] > 0.515 for k in tab)
+    assert r["lambda_escolhido"] == 0.3
+    # ID: sem/com adversário (docs/11 §3)
+    sem, adv = r["id"]["sem_adversario"], r["id"]["adversarial"]
+    assert abs(sem["score_medio"] + 0.00457451) < 1e-7
+    assert abs(sem["loss_medio"] - 0.00424898) < 1e-7
+    assert abs(adv["score_medio"] + 0.00455049) < 1e-7
+    assert abs(sem["ataques"]["neural"] - 0.55633) < 1e-4
+    assert abs(adv["ataques"]["neural"] - 0.52216) < 1e-4
+    ef = r["id"]["efeito_adversarial"]
+    assert abs(ef["delta_score"] - 2.4018e-5) < 1e-8
+    assert abs(ef["ic95"][0] - 2.0822e-5) < 1e-8 and ef["ic95"][0] > 0   # IC > 0
+    assert abs(ef["delta_atacante_neural"] + 0.03417) < 1e-4
+    # OOD: mesmo padrão
+    semo, advo = r["ood"]["sem_adversario"], r["ood"]["adversarial"]
+    assert abs(semo["score_medio"] + 0.00715446) < 1e-7
+    assert abs(advo["score_medio"] + 0.00711585) < 1e-7
+    assert abs(semo["ataques"]["neural"] - 0.57977) < 1e-4
+    assert abs(advo["ataques"]["neural"] - 0.55542) < 1e-4
+    efo = r["ood"]["efeito_adversarial"]
+    assert abs(efo["delta_score"] - 3.8618e-5) < 1e-8
+    assert abs(efo["ic95"][1] - 4.4425e-5) < 1e-8 and efo["ic95"][0] > 0
+    assert abs(efo["delta_atacante_neural"] + 0.02435) < 1e-4
+    # comparadores: E10d perde para todos os controles fortes, nos dois splits
+    for split, deltas in (("id", {"magnitude_ema": -0.001006, "square_ema": -0.000876,
+                                  "short_window": -0.000840, "learned_recurrent": -0.001067}),
+                          ("ood", {"magnitude_ema": -0.001653, "square_ema": -0.001627,
+                                   "short_window": -0.001786, "learned_recurrent": -0.001944})):
+        for k, de in deltas.items():
+            c = r[split]["comparadores"][k]
+            assert abs(c["delta"] - de) < 1e-6, (split, k, c["delta"])
+            assert c["ic95"][1] < 0 and c["conclusao"] == "desfavoravel", (split, k)
+            # ~0 vitórias do E10d (reproduzido: 0,0% em tudo, exceto janela
+            # curta ID com 0,6%); folga 2% protege a CI contra inversão de um
+            # ou dois pares na margem
+            assert c["vitorias"] <= 0.02, (split, k, c["vitorias"])
+    # ressalva: linear ≈ quadrático nos 9 pares — atacantes degenerados (uint8)
+    # não medem reconstrução; nesta execução os pares sao exatamente iguais
+    pares = [r["varredura_validacao"][k]["ataques"] for k in tab]
+    pares += [r[s][m]["ataques"] for s in ("id", "ood")
+              for m in ("sem_adversario", "adversarial")]
+    assert all(abs(a["linear"] - a["quadratico"]) < 0.01 for a in pares)
+    assert all(a["linear"] < 0.51 for a in pares)      # nunca "ataca" de verdade
+    # e o neural é o único que consistentemente fica acima do acaso
+    assert r["id"]["sem_adversario"]["ataques"]["neural"] > 0.52
+
+
+def test_e10d_determinismo_orcamento_e_separacao():
+    """E10d: configuração reduzida — mesmas duas execuções dão o mesmo JSON,
+    estados quantizados em Q4, sementes de treino/validação/teste disjuntas
+    (100000+ / 30000+ / 50000+) e a invariante uint8 do atacante linear."""
+    import numpy as np
+    from ricemotions import experimentos as E
+    mini = dict(E.E10D_CFG, train_sequences=4, validation_sequences=5, epochs=2,
+                steps=40, neural_attack_epochs=3)
+    a = E.e10d_controles(n_test=6, cfg=mini)
+    b = E.e10d_controles(n_test=6, cfg=mini)
+    assert a == b                                     # determinismo total
+    # treino, validação e teste em faixas disjuntas
+    assert a["protocolo"]["treino"] == "100000.."
+    assert a["protocolo"]["validacao"] == "30000.."
+    assert a["protocolo"]["teste"] == "50000.. disjuntos"
+    assert a["protocolo"]["bits_mutaveis"] == 24
+    # estado do codificador é quantizado de verdade (grade de 1/15 = Q4)
+    g = E._e10b_q(np.linspace(0, 1, 37))
+    assert np.allclose(g * 15, np.rint(g * 15), atol=1e-12)
+    # episódio por semente é reproduzível e o atacante neural está presente
+    enc = E._e10d_train(mini, 0.1)
+    e1 = E._e10d_episode(7, mini, enc, False)
+    e2 = E._e10d_episode(7, mini, enc, False)
+    assert np.array_equal(e1["trace"], e2["trace"])
+    assert np.allclose(e1["trace"] * 15, np.rint(e1["trace"] * 15))   # Q4
+    assert "neural" in E._e10d_ataques([e1, e2], mini)
+    # ressalva de docs/11 §4: uint8 faz 2*Y−1 virar {255,1} (por isso o ridge
+    # deles prevê quase tudo positivo e linear == quadrático)
+    Y = np.array([0, 1], dtype=np.uint8)
+    assert (2 * Y - 1).tolist() == [255, 1]
+
+
+def test_e10e_repl_reproduz_as_publicacoes_desta_estacao():
+    """E10e_repl (auditoria MUTARIC ev 5/6 — docs/12): a replicação NOSSA do
+    protocolo de Pareto, executada nesta estação com as mesmas 200 sementes
+    do ev 5 (70000..), regera as tabelas desta execução. Vereditos: (1) o
+    Pareto ID deles {0,3; 1} está contido no nosso {0,1; 0,3; 1}; (2) o
+    Pareto OOD deles {0,003} não se repete ponto a ponto — o nosso {0,01}
+    fica na mesma prateleira P=1 de λ pequeno; (3) λ=1 é o melhor score ID
+    e o pior em privacidade e score nos quatro cantos, como no ev 5;
+    (4) o teste pareado por semente que o ev 6 não pôde fazer acha
+    diferença de utilidade pequena (ID +, OOD −) e confirma o maior
+    vazamento de λ=1 nos dois splits."""
+    from ricemotions import experimentos as E
+    r = E.e10e_repl()
+    p = r["protocolo"]
+    assert p["bits_mutaveis"] == 24 == E.E10B_BUDGET
+    assert p["lambdas"] == list(E.E10E_LAMBDAS)
+    assert p["ev5"] == {"id_pareto": [0.3, 1.0], "ood_pareto": [0.003],
+                        "recomendacao_deles": "l=0,003 (ev 5 §7 / ev 6 §7)"}
+    # tabela ID/OOD (docs/12 §3) — score ~1e-8, acurácia ~1e-4
+    tab = {"id": {0.0: (-0.0036296868, 0.5007778), 0.003: (-0.0036296706, 0.5008194),
+                  0.1: (-0.0036293058, 0.5003056), 0.3: (-0.0036281135, 0.5006042),
+                  1.0: (-0.0036252947, 0.5043125)},
+           "ood": {0.0: (-0.0052806241, 0.4983958), 0.003: (-0.0052805405, 0.4983889),
+                   0.1: (-0.0052820038, 0.4988611), 0.3: (-0.0052817224, 0.4992292),
+                   1.0: (-0.0052925423, 0.5067569)}}
+    for split, t in tab.items():
+        for lam, (sc, neu) in t.items():
+            pt = [x for x in r[split]["pontos"] if x["lambda"] == lam][0]
+            assert abs(pt["score_medio"] - sc) < 1e-8, (split, lam, pt["score_medio"])
+            assert abs(pt["neural_max"] - neu) < 1e-4, (split, lam, pt["neural_max"])
+            assert abs(pt["privacidade"] - (1 - 2 * max(0.0, neu - 0.5))) < 1e-4
+    # fronteiras de Pareto calculadas na não-dominância (score, P)
+    assert r["id"]["pareto"] == [0.1, 0.3, 1.0]
+    assert r["ood"]["pareto"] == [0.01]
+    # teste pareado por semente — o dado que o ev 6 §9 disse não ter salvo
+    par = r["pareado_l1_vs_l003"]
+    ui = par["id"]["utilidade_delta_l1_menos_l003"]
+    uo = par["ood"]["utilidade_delta_l1_menos_l003"]
+    assert abs(ui["delta"] - 4.3759e-6) < 1e-9 and ui["ic95"][0] > 0
+    assert abs(uo["delta"] + 1.2002e-5) < 1e-9 and uo["ic95"][1] < 0
+    assert ui["n"] == 200 == uo["n"] and ui["vitorias"] == 0.62
+    ni = par["id"]["atacante_neural_delta_l1_menos_l003"]
+    no = par["ood"]["atacante_neural_delta_l1_menos_l003"]
+    assert abs(ni["delta"] - 0.0025833) < 1e-6 and ni["ic95"][0] > 0
+    assert abs(no["delta"] - 0.0061528) < 1e-6 and no["ic95"][0] > 0
+    assert ni["n"] == 100 == no["n"]        # metade das trajetórias testa
+    # comparação com as alegações do ev 5/6
+    c = r["comparacao_ev5_ev6"]
+    assert c["pareto_id_deles_contido_nosso"] and not c["pareto_id_confere"]
+    assert c["pareto_ood_nosso_na_pristeira_p1"] and not c["pareto_ood_confere"]
+    assert c["l1_melhor_score_id"] and c["l1_pior_privacidade_id"]
+    assert c["l1_pior_score_ood"] and c["l1_pior_privacidade_ood"]
+    assert c["nao_monotonico_id"]
+    # o pareado tem mais poder que o Welch deles: IC fora de zero nos dois
+    assert not c["ev6_sem_diferenca_utilidade_id_confere"]
+    assert not c["ev6_sem_diferenca_utilidade_ood_confere"]
+    assert c["ev6_vazamento_maior_l1_ood_confere"]      # confirma o z deles
+
+
+def test_e10e_repl_determinismo_orcamento_e_formulas():
+    """E10e_repl: configuração reduzida — duas execuções dão o mesmo JSON,
+    P = 1 − 2·max(0, A−0,5) ponto a ponto, fronteira de Pareto recomputada
+    bate com a registrada, sementes de treino (100000+) e de teste (70000+)
+    disjuntas, estados em Q4 e casamento dos tamanhos do teste pareado."""
+    import numpy as np
+    from ricemotions import experimentos as E
+    mini = dict(E.E10E_CFG, train_sequences=4, epochs=2, steps=40,
+                neural_attack_epochs=2)
+    lambs = (0.0, 0.003, 1.0)
+    a = E.e10e_repl(n_test=6, cfg=mini, lambdas=lambs)
+    b = E.e10e_repl(n_test=6, cfg=mini, lambdas=lambs)
+    assert a == b                                     # determinismo total
+    p = a["protocolo"]
+    assert p["bits_mutaveis"] == 24 == E.E10B_BUDGET
+    assert p["lambdas"] == list(lambs)
+    assert "70000" in p["sementes"] and "100000" in p["sementes"]
+    assert not set(range(70000, 70006)) & set(range(100000, 100004))
+    for split in ("id", "ood"):
+        pts = a[split]["pontos"]
+        assert len(pts) == len(lambs)
+        for pt in pts:
+            v = max(0.0, pt["neural_max"] - 0.5)
+            assert pt["vantagem_neural"] == v
+            assert pt["privacidade"] == 1 - 2 * v
+            assert pt["neural_max"] == max(pt["neural_execucoes"])
+        got = sorted(pt["lambda"] for pt in pts
+                     if not any(q["score_medio"] >= pt["score_medio"]
+                                and q["privacidade"] >= pt["privacidade"]
+                                and (q["score_medio"] > pt["score_medio"]
+                                     or q["privacidade"] > pt["privacidade"])
+                                for q in pts if q is not pt))
+        assert got == a[split]["pareto"]
+        par = a["pareado_l1_vs_l003"][split]
+        assert par["utilidade_delta_l1_menos_l003"]["n"] == 6
+        assert par["atacante_neural_delta_l1_menos_l003"]["n"] == 3
+    # estado do recorrente é quantizado de verdade (grade de 1/15 = Q4)
+    g = E._e10b_q(np.linspace(0, 1, 37))
+    assert np.allclose(g * 15, np.rint(g * 15), atol=1e-12)
+
+
 TESTES = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
 
 

@@ -14,13 +14,13 @@
 |---|---|
 | Repositório | **`github.com/ebiossanto/IA-RESEARCH-MUTARIC`** (**público** desde 04/10/2026), branch `main` |
 | Código | pacote `ricemotions/` — 6 módulos, nenhum com I/O fora de `experimentos.py` |
-| Experimentos | **E1–E10 + E10b** (E1–E4 núcleo, E5 resíduo, E6 agência, E7–E9 verificação externa MutaCore, **E10** paridade de orçamento — auditoria MUTARIC ev, **E10b** controles fortes de memória — auditoria MUTARIC ev 2) |
-| Testes | **32/32** (`python tests/test_smoke.py`), regressão dos números publicados |
+| Experimentos | **E1–E10 + E10b + E10d + E10e_repl** (E1–E4 núcleo, E5 resíduo, E6 agência, E7–E9 verificação externa MutaCore, **E10** paridade de orçamento — auditoria MUTARIC ev, **E10b** controles fortes de memória — auditoria MUTARIC ev 2, **E10d** adversarial + atacante neural — auditoria MUTARIC ev 3/4, **E10e_repl** réplica nossa do protocolo de Pareto — auditorias MUTARIC ev 5/6) |
+| Testes | **36/36** (`python tests/test_smoke.py`), regressão dos números publicados |
 | CI | GitHub Actions, matriz **Windows + Linux** (`.github/workflows/ci.yml`, P0.5) |
-| Figuras | 10 em `figs/` (geradas, determinísticas — o diff deve ser vazio ao regerar) |
+| Figuras | 12 em `figs/` (geradas, determinísticas — o diff deve ser vazio ao regerar) |
 | Resultados | `resultados/resultados.json` — fonte única de todos os números citados |
 | Coleta real | `resultados/maquina.json` + `resultados/telemetria_real.json` — informação desta máquina, **não regressada** (`--telemetria`, `docs/09` §6) |
-| Documentos | `docs/00` a `docs/10` (índice, arquitetura, achados, ponte, plano, resíduo/agência, MutaCore, continuidade, histórico, **auditoria MUTARIC ev**, **auditoria MUTARIC ev 2**) |
+| Documentos | `docs/00` a `docs/12` (índice, arquitetura, achados, ponte, plano, resíduo/agência, MutaCore, continuidade, histórico, **auditoria MUTARIC ev**, **auditoria MUTARIC ev 2**, **auditoria MUTARIC ev 3/4**, **auditorias MUTARIC ev 5/6**) |
 | Estado do texto | **protótipo exploratório**: números descritivos, sem IC nem teste de hipótese |
 
 ## 2. Retomar em 10 minutos
@@ -30,13 +30,14 @@ git clone https://github.com/ebiossanto/IA-RESEARCH-MUTARIC.git
 cd IA-RESEARCH-MUTARIC
 pip install -r requirements.txt
 
-python run_all.py --so-testes    # 32 testes, segundos — faz isto PRIMEIRO
-python run_all.py                # testes + E1-E10 + E10b + figuras (alguns minutos)
+python run_all.py --so-testes    # 36 testes, minutos — faz isto PRIMEIRO
+python run_all.py                # testes + E1-E10 + E10b + E10d + E10e_repl
+                                 # + figuras (~15 min)
 python -m ricemotions.experimentos --telemetria   # coleta REAL da máquina (opcional,
                                                   # requer psutil; grava arquivos próprios)
 ```
 
-Se os **32 testes** passam, o trabalho está exatamente como foi publicado.
+Se os **36 testes** passam, o trabalho está exatamente como foi publicado.
 Se algum falhar, **não edite o teste para fazer passar**: a falha diz qual número
 publicado mudou — leia `docs/02` e `docs/06` antes de decidir qualquer coisa.
 
@@ -71,6 +72,10 @@ reprodução numérica, como em `docs/06`.
    espalhamento Walsh sem decodificador (vira item futuro P1.7).
 7. **Resultado nulo publicado com a mesma proeminência do positivo** — é critério
    de pronto do projeto (`docs/04`).
+8. **Veio sem código?** Então só há dois caminhos honestos: checagem aritmética
+   interna (tabelas × JSON × CSV, fórmulas, estatísticas recalculadas) e, se o
+   protocolo for descrito, uma **replicação própria declarada como nossa** —
+   nunca apresentada como reprodução dos números deles (`docs/12` §2).
 
 ## 4. Próximo passo (em ordem)
 
@@ -101,6 +106,38 @@ por item. A ordem recomendada para retomar:
 > agente: recorrente aprendido; ICs fora de zero nos dois splits). Daí saíram
 > **P1.10** (controles fortes + OOD + IC bootstrap no nosso ambiente do E10)
 > e **P2.7** (E10c, resíduo preditivo com não reconstrução).
+>
+> **A terceira auditoria (MUTARIC ev 3/4)** também foi analisada com provas
+> (`docs/11`): o `e10d.py` deles executado aqui regenerou o JSON publicado
+> **idêntico (0 diferenças em 129 números)** e portado como **E10d** —
+> vereditos publicados: *o treinamento adversarial reduz reconstrução neural
+> sem custo (ΔJ > 0, ICs estritamente positivos), mas o E10d perde para
+> todos os controles fortes do E10b nos dois splits* (H4 refutada), e os
+> **ataques lineares deles são degenerados** (uint8 em `2*Y−1` ⇒ alvos
+> `{255,1}`; linear == quadrático em 9/9). E10c e E10e vieram **sem código**
+> — só checagem aritmética interna. Daí saíram **P1.11** (atacante neural e
+> temporal contra os nossos estados) e a atualização de **P2.7** (a versão
+> linear de não reconstrução já foi implementada de forma independente e deu
+> nulo — formular já com penalidade adversarial).
+>
+> **A quarta auditoria (MUTARIC ev 5 / ev 6)** também foi analisada
+> com provas (`docs/12`): o zip veio **só com saídas, sem código** →
+> **286/286 checagens aritméticas** (tabelas × JSON × CSV, fórmulas de P,
+> fronteiras de Pareto recalculadas, Welch e z do ev 6 recalculados com
+> `scipy`) e uma **replicação nossa executada neste terminal**
+> (**E10e_repl**, mesmas 200 sementes do ev 5, 163,6 s, pareada por semente).
+> Vereditos publicados: *o Pareto ID deles {0,3; 1} está contido no nosso;
+> o Pareto OOD exato **não se repetiu** (o nosso fica na mesma prateleira
+> P = 1 de λ pequeno, ponto diferente — publicado com a mesma proeminência);
+> λ = 1 é o melhor score ID e o pior nos outros três cantos (privacidade ID,
+> score e privacidade OOD — confirmado na réplica), e o maior vazamento OOD
+> de λ = 1 foi confirmado
+> com o **teste pareado por semente que o ev 6 não pôde fazer** porque não
+> salvou o dado*. Daí saíram: reforço de **P3.4** (fixar λ antes do teste —
+> a própria auditoria perdeu a fronteira OOD entre rodadas), selo de
+> confirmação em **P1.9** (o ev 6 §5 escreveu a mesma advertência nossa de
+> pseudorreplicação) e a disciplina de **salvar score e acurácia do atacante
+> por semente** como exigência explícita.
 
 ## 5. Pendências que vivem fora deste repositório
 
@@ -111,6 +148,8 @@ por item. A ordem recomendada para retomar:
 | Documento `MUTACORE _ RIC.md` | fora do repo (anexo do usuário) | já analisado integralmente em `docs/06`; só reabrir se houver código novo anexado |
 | Documento `MUTARIC ev.md` | fora do repo (anexo do usuário) | já analisado integralmente em `docs/09` (5 correções + E10 + coleta); só reabrir se houver nova versão |
 | Documento `MUTARIC ev 2.md` + `e10b.py` | fora do repo (pasta `mutaric b/MUTARIC_E10b/` no Desktop) | já analisado e reproduzido em `docs/10` (E10b portado, 58/58); só reabrir se chegar o `e10.py`/os testes deles, que ficaram **não verificáveis** |
+| Documento `MUTARIC ev 3 e 4.md` + `MUTARIC_E10d.zip` | fora do repo (pasta `IA-RESEARCH-MUTARIC-main/` no Desktop) | já analisado em `docs/11` (E10d portado, JSON idêntico); E10c ficou **não reproduzível** — só reabrir se chegar o código deles |
+| `MUTARIC ev 5.md` + `MUTARIC ev 6.md` + `MUTARIC_E10e_200_SEMENTES.zip` | fora do repo (mesma pasta `IA-RESEARCH-MUTARIC-main/`) | já analisado em `docs/12` (286/286 + réplica `E10e_repl` aqui); o zip **não tem código** — se chegar o `e10e.py` deles, executar e cruzar com o JSON (a checagem aritmética inteira vira reprodução de verdade) |
 | Licença do repositório | não definida | decidir antes de tornar público |
 
 ## 6. Checklist para adicionar um experimento (E11) sem quebrar nada
@@ -148,16 +187,29 @@ por item. A ordem recomendada para retomar:
 
 This document is the **hand-off**: where the work stopped (04/10/2026), how to
 resume in 10 minutes (`pip install -r requirements.txt` → `python run_all.py
---so-testes` → 32/32), and what is already decided and must not be reopened
+--so-testes` → 36/36), and what is already decided and must not be reopened
 without numerical reproduction. Repository:
 `github.com/ebiossanto/IA-RESEARCH-MUTARIC` (public, branch `main`), CI on
-Windows + Linux. Experiments are now **E1–E10 + E10b**; the external audit
-"MUTARIC ev" was verified claim by claim in `docs/09` (five corrections
-adopted, E10 built, real telemetry from this machine collected into
-non-regressed files), and the second audit "MUTARIC ev 2" in `docs/10`
-(its `e10b.py` run here with 58/58 numbers reproduced and ported as E10b:
+Windows + Linux. Experiments are now **E1–E10 + E10b + E10d + E10e_repl**; the
+external audit "MUTARIC ev" was verified claim by claim in `docs/09` (five
+corrections adopted, E10 built, real telemetry from this machine collected into
+non-regressed files), the second audit "MUTARIC ev 2" in `docs/10` (its
+`e10b.py` run here with 58/58 numbers reproduced and ported as E10b:
 **the residue does not beat strong memories of equal budget** — refutation
-published with the same prominence). The next
+published with the same prominence), the third audit "MUTARIC ev 3/4" in
+`docs/11` (its `e10d.py` run here regenerating the published JSON **identical
+— 0 differences in 129 numbers** — and ported as E10d: adversarial training
+reduces neural reconstruction without cost **but loses to every strong
+control**; the document's linear attackers were found **degenerate**
+(uint8 wraparound), and E10c shipped no code), and the fourth package
+"MUTARIC ev 5 / ev 6" in `docs/12` (**outputs only — no code**): **286/286
+arithmetic checks** (document × JSON × CSV, Pareto recomputed, Welch and
+z-tests recomputed with `scipy`) plus **our own replication of the Pareto
+protocol executed on this terminal** (`E10e_repl`, the same 200 seeds,
+paired per seed): the ID Pareto of theirs is contained in ours, **the exact
+OOD Pareto did not repeat** (same structure, different point — published
+with the same prominence), and λ = 1's larger leakage was confirmed with
+the paired per-seed test ev 6 could not run. The next
 concrete step is still **P1.1** (serious baselines with bootstrap CIs), then
 P1.2 (paired hypothesis test) and P1.3 (perceptual transformations); P0.1–P0.5
 are closed. External pendencies live outside this repo: the PIXEL repository

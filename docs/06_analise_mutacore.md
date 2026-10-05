@@ -400,5 +400,5 @@ accepted.**
   unused `landauer_stress` parameter with no Walsh decoder).
 
 Artifacts: `resultados/resultados.json` (`E7_residuo_mutacore`,
-`E8_sobrevivencia`, `E9_chave_residuo`), `figs/mutacore.png`, tests 32/32 via
+`E8_sobrevivencia`, `E9_chave_residuo`), `figs/mutacore.png`, tests 36/36 via
 `python run_all.py`.

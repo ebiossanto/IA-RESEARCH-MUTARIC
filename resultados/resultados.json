@@ -1318,7 +1318,7 @@
   "bits_de_chave": 16.609654901315086,
   "candidatos_testados": 3453,
   "chave_recuperada": 0.03452,
-  "segundos": 0.328,
+  "segundos": 0.307,
   "roundtrip_com_chave_exata": true,
   "campos_nao_deterministicos": [
    "segundos"
@@ -1974,6 +1974,634 @@
     6
    ],
    "norma_frobenius": 1.4127011259289992
+  }
+ },
+ "E10d_controles": {
+  "protocolo": {
+   "config": {
+    "steps": 360,
+    "block": 45,
+    "alpha": 0.18,
+    "base_gain": 0.1,
+    "memory_gain": 0.38,
+    "action_budget": 1.0,
+    "low": 0.01,
+    "high": 0.09,
+    "ood_scale": 1.35,
+    "target": 0.72,
+    "train_sequences": 180,
+    "ridge": 0.001,
+    "validation_sequences": 48,
+    "epochs": 24,
+    "batch": 256,
+    "hidden_adv": 24,
+    "lr_encoder": 0.018,
+    "lr_adversary": 0.025,
+    "leakage_limit": 0.515,
+    "neural_attack_epochs": 80
+   },
+   "bits_mutaveis": 24,
+   "lambdas": [
+    0.0,
+    0.01,
+    0.03,
+    0.1,
+    0.3
+   ],
+   "treino": "100000..",
+   "validacao": "30000..",
+   "teste": "50000.. disjuntos",
+   "otimizacao": "gradiente reverso, adversario MLP adaptativo, STE e gradiente recorrente truncado em um passo",
+   "criterio": "maior score com atacante neural de validacao <= limite",
+   "limite": "nao prova independencia; atacante externo e familia finita"
+  },
+  "varredura_validacao": {
+   "0.0": {
+    "score_medio": -0.004477346953091917,
+    "loss_medio": 0.00415169596734496,
+    "desvio_score": 0.0005418708300004584,
+    "ataques": {
+     "linear": 0.49737654320987656,
+     "quadratico": 0.49737654320987656,
+     "neural": 0.5434220679012346
+    }
+   },
+   "0.01": {
+    "score_medio": -0.004477141950097401,
+    "loss_medio": 0.0041515636905131055,
+    "desvio_score": 0.0005415899161006959,
+    "ataques": {
+     "linear": 0.49745370370370373,
+     "quadratico": 0.49745370370370373,
+     "neural": 0.5428819444444445
+    }
+   },
+   "0.03": {
+    "score_medio": -0.004476705379097729,
+    "loss_medio": 0.004151234283635066,
+    "desvio_score": 0.0005412403333194956,
+    "ataques": {
+     "linear": 0.49710648148148145,
+     "quadratico": 0.49710648148148145,
+     "neural": 0.536670524691358
+    }
+   },
+   "0.1": {
+    "score_medio": -0.0044709998768657205,
+    "loss_medio": 0.004145871035412504,
+    "desvio_score": 0.0005418480493286064,
+    "ataques": {
+     "linear": 0.490991512345679,
+     "quadratico": 0.490991512345679,
+     "neural": 0.5386574074074074
+    }
+   },
+   "0.3": {
+    "score_medio": -0.004455619175225568,
+    "loss_medio": 0.00413073576623698,
+    "desvio_score": 0.000536896000508204,
+    "ataques": {
+     "linear": 0.5009645061728395,
+     "quadratico": 0.5009645061728395,
+     "neural": 0.5246720679012346
+    }
+   }
+  },
+  "lambda_escolhido": 0.3,
+  "id": {
+   "sem_adversario": {
+    "score_medio": -0.004574505079463974,
+    "loss_medio": 0.004248982536728646,
+    "desvio_score": 0.000659325517275061,
+    "ataques": {
+     "linear": 0.49609375,
+     "quadratico": 0.49609375,
+     "neural": 0.5563310185185185
+    }
+   },
+   "adversarial": {
+    "score_medio": -0.004550487094257009,
+    "loss_medio": 0.004225710047319368,
+    "desvio_score": 0.0006536041345864831,
+    "ataques": {
+     "linear": 0.49949652777777775,
+     "quadratico": 0.49949652777777775,
+     "neural": 0.5221643518518518
+    }
+   },
+   "efeito_adversarial": {
+    "delta_score": 2.4017985206964154e-05,
+    "ic95": [
+     2.08215955642642e-05,
+     2.7209583122497232e-05
+    ],
+    "delta_atacante_neural": -0.03416666666666668
+   },
+   "comparadores": {
+    "magnitude_ema": {
+     "score_medio": -0.0035441822615229477,
+     "delta": -0.0010063048327340622,
+     "ic95": [
+      -0.0010628817973304975,
+      -0.0009504152315592658
+     ],
+     "vitorias": 0.0,
+     "conclusao": "desfavoravel"
+    },
+    "square_ema": {
+     "score_medio": -0.0036742425442221637,
+     "delta": -0.0008762445500348456,
+     "ic95": [
+      -0.0009425630477675459,
+      -0.0008142331012170972
+     ],
+     "vitorias": 0.0,
+     "conclusao": "desfavoravel"
+    },
+    "short_window": {
+     "score_medio": -0.0037104116336000538,
+     "delta": -0.0008400754606569559,
+     "ic95": [
+      -0.0009145020715840935,
+      -0.0007690833642078954
+     ],
+     "vitorias": 0.00625,
+     "conclusao": "desfavoravel"
+    },
+    "learned_recurrent": {
+     "score_medio": -0.0034835920953415873,
+     "delta": -0.0010668949989154227,
+     "ic95": [
+      -0.0011393116897793578,
+      -0.001000335178963966
+     ],
+     "vitorias": 0.0,
+     "conclusao": "desfavoravel"
+    }
+   }
+  },
+  "ood": {
+   "sem_adversario": {
+    "score_medio": -0.007154463637652236,
+    "loss_medio": 0.006828435860496707,
+    "desvio_score": 0.0011759650946438795,
+    "ataques": {
+     "linear": 0.49513310185185183,
+     "quadratico": 0.49513310185185183,
+     "neural": 0.5797743055555555
+    }
+   },
+   "adversarial": {
+    "score_medio": -0.0071158460146403995,
+    "loss_medio": 0.006790287519782469,
+    "desvio_score": 0.0011600172868941176,
+    "ataques": {
+     "linear": 0.4993576388888889,
+     "quadratico": 0.4993576388888889,
+     "neural": 0.5554224537037037
+    }
+   },
+   "efeito_adversarial": {
+    "delta_score": 3.8617623011837296e-05,
+    "ic95": [
+     3.3304475938297804e-05,
+     4.442468783779327e-05
+    ],
+    "delta_atacante_neural": -0.024351851851851847
+   },
+   "comparadores": {
+    "magnitude_ema": {
+     "score_medio": -0.005462887709525884,
+     "delta": -0.0016529583051145165,
+     "ic95": [
+      -0.0017489725768656485,
+      -0.0015580995603639066
+     ],
+     "vitorias": 0.0,
+     "conclusao": "desfavoravel"
+    },
+    "square_ema": {
+     "score_medio": -0.005488387243906758,
+     "delta": -0.0016274587707336425,
+     "ic95": [
+      -0.0017295815573425855,
+      -0.001528292127370485
+     ],
+     "vitorias": 0.0,
+     "conclusao": "desfavoravel"
+    },
+    "short_window": {
+     "score_medio": -0.005329429528127003,
+     "delta": -0.0017864164865133958,
+     "ic95": [
+      -0.0019165438124362371,
+      -0.0016576658292820768
+     ],
+     "vitorias": 0.0,
+     "conclusao": "desfavoravel"
+    },
+    "learned_recurrent": {
+     "score_medio": -0.0051714585519415796,
+     "delta": -0.0019443874626988195,
+     "ic95": [
+      -0.0020780065287391313,
+      -0.0018182765901375436
+     ],
+     "vitorias": 0.0,
+     "conclusao": "desfavoravel"
+    }
+   }
+  }
+ },
+ "E10e_repl": {
+  "protocolo": {
+   "config": {
+    "steps": 240,
+    "block": 45,
+    "alpha": 0.18,
+    "base_gain": 0.1,
+    "memory_gain": 0.38,
+    "action_budget": 1.0,
+    "low": 0.01,
+    "high": 0.09,
+    "ood_scale": 1.35,
+    "target": 0.72,
+    "train_sequences": 24,
+    "ridge": 0.001,
+    "epochs": 4,
+    "batch": 256,
+    "hidden_adv": 32,
+    "lr_encoder": 0.012,
+    "lr_adversary": 0.025,
+    "neural_attack_epochs": 10
+   },
+   "lambdas": [
+    0.0,
+    0.001,
+    0.003,
+    0.01,
+    0.03,
+    0.1,
+    0.3,
+    1.0
+   ],
+   "bits_mutaveis": 24,
+   "sementes": "70000..+n (mesmas do ev 5); treino 100000..100000+train_sequences",
+   "implementacao": "nossa, do protocolo descrito (ev 3/4 §1-4 e ev 5): a auditoria nao forneceu codigo, entao isto NAO reproduz os numeros deles - testa as alegacoes em uma implementacao independente sobre o ambiente verificado",
+   "ataques": "ridge linear/quadratico com alvo inteiro (sem o bug uint8 do e10d) + 2 neurais de 64 unidades (inits 77/78); metade das trajetorias treina, metade testa",
+   "ev5": {
+    "id_pareto": [
+     0.3,
+     1.0
+    ],
+    "ood_pareto": [
+     0.003
+    ],
+    "recomendacao_deles": "l=0,003 (ev 5 §7 / ev 6 §7)"
+   }
+  },
+  "id": {
+   "pontos": [
+    {
+     "lambda": 0.0,
+     "score_medio": -0.003629686771458036,
+     "desvio_score": 0.00031345169005488657,
+     "neural_execucoes": [
+      0.5007777777777778,
+      0.49875694444444446
+     ],
+     "neural_max": 0.5007777777777778,
+     "vantagem_neural": 0.0007777777777777661,
+     "privacidade": 0.9984444444444445,
+     "atacantes_auxiliares": {
+      "linear": 0.49990277777777775,
+      "quadratico": 0.49990277777777775
+     }
+    },
+    {
+     "lambda": 0.001,
+     "score_medio": -0.003629706560894942,
+     "desvio_score": 0.0003134695552493068,
+     "neural_execucoes": [
+      0.5007847222222223,
+      0.4987847222222222
+     ],
+     "neural_max": 0.5007847222222223,
+     "vantagem_neural": 0.0007847222222222561,
+     "privacidade": 0.9984305555555555,
+     "atacantes_auxiliares": {
+      "linear": 0.49990277777777775,
+      "quadratico": 0.49990277777777775
+     }
+    },
+    {
+     "lambda": 0.003,
+     "score_medio": -0.0036296705819364524,
+     "desvio_score": 0.0003135038921224807,
+     "neural_execucoes": [
+      0.5008194444444445,
+      0.49877777777777776
+     ],
+     "neural_max": 0.5008194444444445,
+     "vantagem_neural": 0.0008194444444444837,
+     "privacidade": 0.998361111111111,
+     "atacantes_auxiliares": {
+      "linear": 0.49990277777777775,
+      "quadratico": 0.49990277777777775
+     }
+    },
+    {
+     "lambda": 0.01,
+     "score_medio": -0.003629944324248346,
+     "desvio_score": 0.0003145857694425248,
+     "neural_execucoes": [
+      0.5007916666666666,
+      0.49864583333333334
+     ],
+     "neural_max": 0.5007916666666666,
+     "vantagem_neural": 0.000791666666666635,
+     "privacidade": 0.9984166666666667,
+     "atacantes_auxiliares": {
+      "linear": 0.49990277777777775,
+      "quadratico": 0.49990277777777775
+     }
+    },
+    {
+     "lambda": 0.03,
+     "score_medio": -0.003629959073016956,
+     "desvio_score": 0.0003143936660434912,
+     "neural_execucoes": [
+      0.5004444444444445,
+      0.49847916666666664
+     ],
+     "neural_max": 0.5004444444444445,
+     "vantagem_neural": 0.0004444444444444695,
+     "privacidade": 0.9991111111111111,
+     "atacantes_auxiliares": {
+      "linear": 0.49990277777777775,
+      "quadratico": 0.49990277777777775
+     }
+    },
+    {
+     "lambda": 0.1,
+     "score_medio": -0.0036293057996934475,
+     "desvio_score": 0.0003140657741991883,
+     "neural_execucoes": [
+      0.5003055555555556,
+      0.49850694444444443
+     ],
+     "neural_max": 0.5003055555555556,
+     "vantagem_neural": 0.0003055555555555589,
+     "privacidade": 0.9993888888888889,
+     "atacantes_auxiliares": {
+      "linear": 0.49990277777777775,
+      "quadratico": 0.49990277777777775
+     }
+    },
+    {
+     "lambda": 0.3,
+     "score_medio": -0.003628113452862305,
+     "desvio_score": 0.00031453795980609044,
+     "neural_execucoes": [
+      0.5006041666666666,
+      0.4988402777777778
+     ],
+     "neural_max": 0.5006041666666666,
+     "vantagem_neural": 0.0006041666666666279,
+     "privacidade": 0.9987916666666667,
+     "atacantes_auxiliares": {
+      "linear": 0.49990277777777775,
+      "quadratico": 0.49990277777777775
+     }
+    },
+    {
+     "lambda": 1.0,
+     "score_medio": -0.0036252946525571926,
+     "desvio_score": 0.0003186035579308579,
+     "neural_execucoes": [
+      0.5043125,
+      0.5008541666666667
+     ],
+     "neural_max": 0.5043125,
+     "vantagem_neural": 0.004312500000000052,
+     "privacidade": 0.9913749999999999,
+     "atacantes_auxiliares": {
+      "linear": 0.49990277777777775,
+      "quadratico": 0.49990277777777775
+     }
+    }
+   ],
+   "pareto": [
+    0.1,
+    0.3,
+    1.0
+   ]
+  },
+  "ood": {
+   "pontos": [
+    {
+     "lambda": 0.0,
+     "score_medio": -0.0052806241011641355,
+     "desvio_score": 0.00045009671108129805,
+     "neural_execucoes": [
+      0.4983958333333333,
+      0.49801388888888887
+     ],
+     "neural_max": 0.4983958333333333,
+     "vantagem_neural": 0.0,
+     "privacidade": 1.0,
+     "atacantes_auxiliares": {
+      "linear": 0.5000069444444445,
+      "quadratico": 0.5000069444444445
+     }
+    },
+    {
+     "lambda": 0.001,
+     "score_medio": -0.005280594733715258,
+     "desvio_score": 0.0004501464756961568,
+     "neural_execucoes": [
+      0.498375,
+      0.49798611111111113
+     ],
+     "neural_max": 0.498375,
+     "vantagem_neural": 0.0,
+     "privacidade": 1.0,
+     "atacantes_auxiliares": {
+      "linear": 0.5000069444444445,
+      "quadratico": 0.5000069444444445
+     }
+    },
+    {
+     "lambda": 0.003,
+     "score_medio": -0.005280540535709026,
+     "desvio_score": 0.00045018603784217665,
+     "neural_execucoes": [
+      0.4983888888888889,
+      0.4979722222222222
+     ],
+     "neural_max": 0.4983888888888889,
+     "vantagem_neural": 0.0,
+     "privacidade": 1.0,
+     "atacantes_auxiliares": {
+      "linear": 0.5000069444444445,
+      "quadratico": 0.5000069444444445
+     }
+    },
+    {
+     "lambda": 0.01,
+     "score_medio": -0.005280481138692623,
+     "desvio_score": 0.0004501923440418706,
+     "neural_execucoes": [
+      0.4984722222222222,
+      0.4979722222222222
+     ],
+     "neural_max": 0.4984722222222222,
+     "vantagem_neural": 0.0,
+     "privacidade": 1.0,
+     "atacantes_auxiliares": {
+      "linear": 0.5000069444444445,
+      "quadratico": 0.5000069444444445
+     }
+    },
+    {
+     "lambda": 0.03,
+     "score_medio": -0.005280499987409546,
+     "desvio_score": 0.00045025075203965247,
+     "neural_execucoes": [
+      0.49840277777777775,
+      0.49794444444444447
+     ],
+     "neural_max": 0.49840277777777775,
+     "vantagem_neural": 0.0,
+     "privacidade": 1.0,
+     "atacantes_auxiliares": {
+      "linear": 0.5000069444444445,
+      "quadratico": 0.5000069444444445
+     }
+    },
+    {
+     "lambda": 0.1,
+     "score_medio": -0.0052820038348971995,
+     "desvio_score": 0.0004508573554098996,
+     "neural_execucoes": [
+      0.4988611111111111,
+      0.4980486111111111
+     ],
+     "neural_max": 0.4988611111111111,
+     "vantagem_neural": 0.0,
+     "privacidade": 1.0,
+     "atacantes_auxiliares": {
+      "linear": 0.5000069444444445,
+      "quadratico": 0.5000069444444445
+     }
+    },
+    {
+     "lambda": 0.3,
+     "score_medio": -0.005281722414524862,
+     "desvio_score": 0.0004517458144355036,
+     "neural_execucoes": [
+      0.49922916666666667,
+      0.49875694444444446
+     ],
+     "neural_max": 0.49922916666666667,
+     "vantagem_neural": 0.0,
+     "privacidade": 1.0,
+     "atacantes_auxiliares": {
+      "linear": 0.5000069444444445,
+      "quadratico": 0.5000069444444445
+     }
+    },
+    {
+     "lambda": 1.0,
+     "score_medio": -0.005292542345336984,
+     "desvio_score": 0.0004617433004362455,
+     "neural_execucoes": [
+      0.5067569444444444,
+      0.5015
+     ],
+     "neural_max": 0.5067569444444444,
+     "vantagem_neural": 0.006756944444444413,
+     "privacidade": 0.9864861111111112,
+     "atacantes_auxiliares": {
+      "linear": 0.5000069444444445,
+      "quadratico": 0.5000069444444445
+     }
+    }
+   ],
+   "pareto": [
+    0.01
+   ]
+  },
+  "pareado_l1_vs_l003": {
+   "id": {
+    "utilidade_delta_l1_menos_l003": {
+     "delta": 4.375929379259347e-06,
+     "ic95": [
+      1.738593109577742e-06,
+      6.992092462637356e-06
+     ],
+     "vitorias": 0.62,
+     "n": 200
+    },
+    "atacante_neural_delta_l1_menos_l003": {
+     "delta": 0.0025833333333333316,
+     "ic95": [
+      0.0011527777777777751,
+      0.004048611111111111
+     ],
+     "vitorias": 0.6,
+     "n": 100
+    }
+   },
+   "ood": {
+    "utilidade_delta_l1_menos_l003": {
+     "delta": -1.2001809627957905e-05,
+     "ic95": [
+      -1.654043218905617e-05,
+      -7.6113713354976644e-06
+     ],
+     "vitorias": 0.395,
+     "n": 200
+    },
+    "atacante_neural_delta_l1_menos_l003": {
+     "delta": 0.006152777777777778,
+     "ic95": [
+      0.004604166666666668,
+      0.007673611111111104
+     ],
+     "vitorias": 0.77,
+     "n": 100
+    }
+   }
+  },
+  "comparacao_ev5_ev6": {
+   "pareto_id_nosso": [
+    0.1,
+    0.3,
+    1.0
+   ],
+   "pareto_id_deles": [
+    0.3,
+    1.0
+   ],
+   "pareto_id_confere": false,
+   "pareto_id_deles_contido_nosso": true,
+   "pareto_ood_nosso": [
+    0.01
+   ],
+   "pareto_ood_deles": [
+    0.003
+   ],
+   "pareto_ood_confere": false,
+   "pareto_ood_nosso_na_pristeira_p1": true,
+   "l1_melhor_score_id": true,
+   "l1_pior_privacidade_id": true,
+   "l1_pior_score_ood": true,
+   "l1_pior_privacidade_ood": true,
+   "nao_monotonico_id": true,
+   "ev6_sem_diferenca_utilidade_id_confere": false,
+   "ev6_sem_diferenca_utilidade_ood_confere": false,
+   "ev6_vazamento_maior_l1_ood_confere": true
   }
  },
  "demo_mensagem": {
