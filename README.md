@@ -29,7 +29,7 @@ tentam recuperar **família afetiva, procedência e uma carga explícita de 5,36
 1. `docs/01_arquitetura.md` — o que cada módulo faz, formatos, contrato.
 2. `docs/02_analise_achados.md` — números + 8 achados (inclui um bug já corrigido).
 3. `docs/03_relacao_pixel_teoa.md` — a ponte TEOA × PIXEL: o que está ligado e as 7 lacunas.
-4. `docs/04_plano_desenvolvimento.md` — P0–P3 com critério de aceite (P0.1–P0.5 concluídos).
+4. `docs/04_plano_desenvolvimento.md` — P0–P4 com critério de aceite (P0.1–P0.5 concluídos; P4 = objetivo novo sistema JEV-IA-MUTARIC).
 5. `docs/05_residuo_e_agencia.md` — resíduo, Landauer, τ e a **agência de mão dupla**
    (inclui a resposta a *"eu não sinto, eu computo"*).
 6. `docs/06_analise_mutacore.md` — análise do documento **MutaCore/RIC**: cada
@@ -312,6 +312,15 @@ nossos estados — da auditoria ev 3/4). Depois **P2.1**, trocar `mundo.episode(
 `teoa/core.py` de verdade, **P2.6** (agente sem evento externo sintético) e
 **P2.7** (E10c: resíduo preditivo com não reconstrução — já com penalidade
 adversarial, após a versão linear dar nulo no E10c externo).
+
+**Objetivo novo (05/10/2026):** o material externo `_MUTARIC Jev.md` propõe o
+**sistema JEV-IA-MUTARIC** — o Jev (modelo de decisão estruturada) como camada
+probabilística sobre o estado MUTARIC, na divisão *LLM explica · Jev decide ·
+MUTARIC regula*, com o experimento **`E11-JEV`** (4 condições, 12 métricas,
+H1–H4). Registrado como **P4** em `docs/04` (contrato puro, harness sem Jev,
+atacante semântico, calibração ECE/Brier) — **nenhuma alegação sobre o Jev
+verificada**: sem acesso ao modelo, e as ressalvas da §9 do documento viraram
+regras do projeto.
 Como retomar: `docs/07`.
 
 ---

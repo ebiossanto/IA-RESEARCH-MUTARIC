@@ -26,7 +26,7 @@ imagem, e a imagem é relida por um código que decodifica família, procedênci
 carga — com a pergunta constante: *isso é leitura relacional ou reconhecimento de
 um roteiro?* (`docs/02` A6).
 
-## 2. Cronologia — dez ciclos em um dia (04/10/2026)
+## 2. Cronologia — ciclos 0–9 em um dia (04/10/2026) e ciclo 10 (05/10/2026)
 
 | ciclo | commit | o que mudou |
 |---|---|---|
@@ -39,7 +39,8 @@ um roteiro?* (`docs/02` A6).
 | **6** | `742a811` | **ciclo MUTARIC ev** (`docs/09`): auditoria externa analisada com provas — 5 correções adotadas (2 redacionais no código/docs, 2 viram **P1.9**/**P2.6**), **E10** (paridade de orçamento, 3/3 condições), coleta **real** desta máquina (`maquina.json`, `telemetria_real.json`), testes 27 → **30**, figuras 8 → **9** |
 | **7** | `23572f4` | **ciclo MUTARIC ev 2** (`docs/10`): segunda auditoria externa executada e reproduzida (**58/58 números**) — **E10b** (controles fortes de memória, 24 bits, ID + OOD) portado com veredito nulo publicado (*o resíduo não vence memórias fortes*), limitação do comparador no `docs/09` §7.6, novas pendências **P1.10**/**P2.7**, testes 30 → **32**, figuras 9 → **10** |
 | **8** | — | **ciclo MUTARIC ev 3/4** (`docs/11`): terceira auditoria externa executada e reproduzida (**JSON idêntico, 0 diferenças em 129 números; 113/113 checagens**) — **E10d** (adversarial + atacante neural, 24 bits) portado com dois vereditos publicados (*o treinamento adversarial reduz reconstrução neural sem custo, mas perde para todos os controles fortes* — H4 refutada; e a **ressalva própria** de que os ataques lineares deles são degenerados — uint8), E10c/E10e **sem código** (não reproduzíveis), nova pendência **P1.11** + atualização de **P2.7**, testes 32 → **34**, figuras 10 → **11** |
-| **9** (atual) | — | **ciclo MUTARIC ev 5/6** (`docs/12`): quarta auditoria externa — zip **só com saídas, sem código** → **286/286 checagens aritméticas** (tabelas × JSON × CSV, fórmulas de P, Pareto recalculado, Welch/z do ev 6 recalculados com `scipy`) + **replicação NOSSA** `E10e_repl` executada **neste terminal** com as mesmas 200 sementes do ev 5 (163,6 s, pareada por semente) — vereditos: *Pareto ID deles **contido** no nosso; Pareto OOD exato **não repetido** (mesma prateleira P = 1); λ = 1 vaza mais **confirmado** com o pareado que o ev 6 não pôde fazer*; `docs/04` ganhou o **registro detalhado de erros, acertos e retomadas de caminho** (ciclos 0–9); testes 34 → **36**, figuras 11 → **12** |
+| **9** | — | **ciclo MUTARIC ev 5/6** (`docs/12`): quarta auditoria externa — zip **só com saídas, sem código** → **286/286 checagens aritméticas** (tabelas × JSON × CSV, fórmulas de P, Pareto recalculado, Welch/z do ev 6 recalculados com `scipy`) + **replicação NOSSA** `E10e_repl` executada **neste terminal** com as mesmas 200 sementes do ev 5 (163,6 s, pareada por semente) — vereditos: *Pareto ID deles **contido** no nosso; Pareto OOD exato **não repetido** (mesma prateleira P = 1); λ = 1 vaza mais **confirmado** com o pareado que o ev 6 não pôde fazer*; `docs/04` ganhou o **registro detalhado de erros, acertos e retomadas de caminho** (ciclos 0–9); testes 34 → **36**, figuras 11 → **12** |
+| **10** (atual) | — | **objetivo novo: sistema JEV-IA-MUTARIC** — material externo `_MUTARIC Jev.md` (fora do repo, mesma pasta das auditorias) analisado e adotado como **P4** no `docs/04`: Jev como **camada probabilística de decisão** sobre o estado MUTARIC (*LLM explica · Jev decide · MUTARIC regula*), contrato `MUTARIC Decision State`, experimento **`E11-JEV`** (4 condições πA–πD, 12 métricas, H1–H4 reescritos com IC pareada e ε declarado), **atacante semântico** (estende P1.11) e **calibração ECE/Brier** — **nenhuma alegação sobre o Jev verificada** (sem acesso ao modelo; as 7 recusas da §9 do documento viraram regra) e **nenhum número novo**: 36 testes, 12 figuras inalterados |
 
 Linha do tempo interna (ciclos 1–3): as datas e o "antes/depois" de cada correção
 estão em `docs/01` §7, com a nota de cronologia sobre as correções do E5/E6.
@@ -121,6 +122,13 @@ com 139 grafos) e `demo_mensagem` ("Ganhei!", 11 glifos, 11/11 símbolos até σ
   pareado que o ev 6 não pôde fazer** (ele não salvou o dado por semente)*.
   O `docs/04` ganhou o **registro detalhado de erros, acertos e retomadas
   de caminho** dos ciclos 0–9.
+- **Ciclo 10 (05/10/2026):** material externo `_MUTARIC Jev.md` → **objetivo
+  novo P4, sistema JEV-IA-MUTARIC** (Jev decide, MUTARIC regula) com o
+  experimento **`E11-JEV`** (πA–πD, 12 métricas, H1–H4) protocolado em
+  `docs/04`: contrato puro `decision_state()`, harness rodando **sem** Jev
+  (decisor local), atacante semântico (estende P1.11), calibração ECE/Brier —
+  nenhuma alegação externa sobre o Jev verificada (sem acesso) e **nenhum
+  número novo**.
 
 ## 4. Mudanças de direção
 
@@ -239,7 +247,7 @@ Os achados que **pioraram a própria história** e por isso estão publicados:
 ## 6. Estado atual e fila
 
 - **Repositório:** `github.com/ebiossanto/IA-RESEARCH-MUTARIC` (**público**, `main`);
-  CI verde em Windows e Ubuntu (36/36); histórico completo em `git log` (10 ciclos, §2).
+  CI verde em Windows e Ubuntu (36/36); histórico completo em `git log` (11 ciclos, §2).
 - **Código:** 6 módulos (`mundo`, `glifo`, `residuo`, `agente`, `homeostase`,
   `experimentos`) + `tests/` (36) + `run_all.py`.
 - **Saídas:** 12 figuras em `figs/`, `resultados/resultados.json` (determinístico;
@@ -254,7 +262,9 @@ Os achados que **pioraram a própria história** e por isso estão publicados:
   verdade → P2.3 loop de dois agentes → P2.6 (novo: agente sem evento externo)
   → P2.7 (E10c, resíduo preditivo com não reconstrução — já com penalidade
   adversarial, `docs/11` §5) →
-  P3 publicação. Pendências externas: repo PIXEL, licença.
+  P3 publicação → **P4** (objetivo novo 05/10/2026: sistema **JEV-IA-MUTARIC**,
+  experimento `E11-JEV` — `docs/04`). Pendências externas: repo PIXEL, licença,
+  acesso ao Jev (P4.3/P4.4 bloqueados sem ele).
 - **Como retomar:** `docs/07_continuidade.md`.
 
 ## 7. Números publicados — mapa rápido das chaves
@@ -321,6 +331,14 @@ repeat** (same P = 1 plateau, different point — published with equal
 prominence), and λ = 1's larger OOD leakage was confirmed with the **paired
 test ev 6 could not run** (tests → 36, figures → 12; `docs/04` also gained
 a detailed record of errors, successes and course changes for cycles 0–9).
+Cycle 10 (05/10/2026) registered a **new objective without new numbers**: the
+**JEV-IA-MUTARIC system** from the external `_MUTARIC Jev.md` — Jev as a
+probabilistic decision layer over the MUTARIC state (*LLM explains · Jev
+decides · MUTARIC regulates*) with the **`E11-JEV`** experiment (4 conditions,
+12 metrics, H1–H4 with paired-CI acceptance) adopted as **P4** in `docs/04`,
+including a semantic attacker (extending P1.11) and ECE/Brier calibration;
+**no claim about Jev was verified** (no access to the model) and its §9
+caveats became project rules.
 
 **Studies (E1–E10 + E10b + E10d + E10e_repl plus the σ curve):** provenance in relations (0.919 vs 1.000
 baseline — the relational code does *not* win on accuracy, it wins on affine

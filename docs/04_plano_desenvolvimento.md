@@ -98,6 +98,77 @@ o relacional continuar pior, a conclusão é que a hipótese relacional **não s
 5. Relacionar explicitamente com a literatura: affective computing com canal
    *valência × arousal*, RL homeostático, código de canal com decisão.
 
+## P4 — Sistema JEV-IA-MUTARIC (objetivo novo, 05/10/2026)
+
+**Objetivo:** construir o sistema **JEV-IA-MUTARIC** —
+
+```
+ambiente → MUTARIC → Jev → ação → consequência → MUTARIC
+```
+
+— no qual o MUTARIC continua dono de **estado interno, memória residual,
+homeostase e continuidade temporal**, e o **Jev** (modelo de decisão estruturada
+anunciado pela TypeSafe AI em 09/2026) entra como **camada probabilística de
+avaliação e decisão**: recebe um estado tipado e devolve escolha/probabilidades
+com confiança. Divisão proposta no documento e adotada aqui:
+***LLM explica · Jev decide · MUTARIC regula***.
+
+Fonte: material externo **`_MUTARIC Jev.md`** (fora do repositório, mesma pasta
+das auditorias; analisado em 05/10/2026). **Nada sobre o Jev está verificado** —
+lançamento, "System One Models", "sem alucinação" e calibração vêm só de
+noticiário, sem código e sem acesso ao modelo neste terminal. A regra do projeto
+continua a mesma: afirmação externa só entra com reprodução numérica — aqui entra
+apenas **o protocolo**, que é verificável por nós. Este item é **objetivo e
+protocolo, não resultado**: nenhum número novo (36 testes, 12 figuras
+inalterados).
+
+### O que o objetivo traz (adotado do documento)
+
+| componente | o que é | onde vive no plano |
+|---|---|---|
+| **Camada 1 — estado MUTARIC** | `Z_t = [X_t, S*_t, R_t, h_t, τ_t, ΔX_t]`: continuidade temporal, histórico comprimido, erro homeostático, consequências, privacidade do conteúdo | núcleo atual (`mundo`/`residuo`/`homeostase`) — já existe |
+| **Camada 2 — Jev avaliador** | `p_t(a) = Jev(a \| Z_t, O_t, G_t)` sobre ações delimitadas (`agir · observar · recuperar · pedir_revisao`) | contrato **P4.1** + adaptador **P4.3** |
+| **Camada 3 — política modulada** | `p̃_t(a) ∝ p_t(a)·exp[−β(R_t)·C(a) + γ·V(a)]`: o resíduo **modula** o uso da avaliação, não a substitui | harness **P4.2** |
+| **Contrato `MUTARIC Decision State`** | JSON de entrada (observação + estado interno + resíduo + histórico comprimido + ações permitidas) e resposta tipada (ação, probabilidades, confiança, risco) | **P4.1**, função pura |
+| **Papéis do Jev** | (1) motor de decisão condicionado; (2) **atacante semântico** do conteúdo apagado; (3) sonda externa do estado regulatório; (4) **calibrador** da incerteza (ECE/Brier) | **P4.2–P4.6** |
+| **Experimento `E11-JEV`** | 4 condições: `πA` (só observação), `πB` (+estado), `πC` (+resíduo e memória), `πD` (+resíduo treinado com não-reconstrução) — 12 métricas, H1–H4 | **P4.2** |
+
+### Itens com critério de aceite
+
+| # | Tarefa | Pronto quando |
+|---|---|---|
+| P4.1 | **Contrato `MUTARIC Decision State` como função pura** no núcleo (estado interno → JSON tipado), sem nenhuma chamada externa | `decision_state()` roda na suíte: mesmos `float64` ⇒ mesmo contrato, byte a byte |
+| P4.2 | **Harness do `E11-JEV` sem Jev**: as 4 condições πA–πD com um decisor local (política probabilística determinística) e o `R̃` do caminho E10d/P2.7 | πA–πD rodam neste terminal com sementes fixas, IC pareada por semente, H1–H4 calculados e regressados em `resultados.json` |
+| P4.3 | **Adaptador Jev** (quando houver acesso): I/O **só** em `experimentos.py`, saída em arquivo próprio **declarado não-determinista** (mesma disciplina da telemetria, `docs/06` §9) — nunca na regressão | execução real publicada **com a origem marcada**; nenhum teste da suíte depende de rede |
+| P4.4 | **Verificação independente das alegações sobre o Jev** (ECE/Brier medidos aqui; alegação de "sem alucinação" testada) | números nossos com protocolo; item **bloqueado** enquanto não houver acesso — até lá nenhuma alegação citada como fato |
+| P4.5 | **Atacante semântico**: receber o resíduo e responder canal de origem, sinal do evento, tipo de falha (falha/ameaça/conflito/ausência), objetivo afetado, sequência causal | acurácia ≈ acaso **com IC contra 50%**; se passar, o vazamento semântico é publicado como achado (estende a **P1.11**) |
+| P4.6 | **Calibração sob tensão/resíduo/OOD**: ECE e Brier por condição e regime | tabela ECE/Brier × condição × regime; H4 com IC |
+
+### Hipóteses do `E11-JEV` (aceite, com a disciplina do projeto)
+
+| H | enunciado do documento | nosso critério |
+|---|---|---|
+| H1 | `J(πC) > J(πA)` | IC bootstrap **pareada por semente** (P1.9); se incluir 0 → **nulo** |
+| H2 | `J(πD) ≈ J(πC)` | "≈" exige **margem ε fixada antes** — "não deu significativo" não é equivalência |
+| H3 | `Reconstrução(R̃) < Reconstrução(R)` | medida pelo **atacante de P1.11** (neural/temporal), não só por limiar linear — lição do E10d |
+| H4 | `ECE(πD) ≤ ECE(πA)` | ECE/Brier calculados aqui, λ fixado antes (P3.4) |
+
+### Limites do documento (§9) — adotados como regras deste objetivo
+
+Não faremos (lista deles, assumida como nossa): substituir a transição MUTARIC
+pelo Jev; enviar o histórico privado inteiro; tratar confiança declarada como
+garantia; chamar probabilidade de "emoção"; aceitar ação automática sem limite;
+usar o Jev como prova de consciência; confiar em "sem alucinação" sem avaliação
+independente. Somados aos nossos: núcleo continua determinístico (P4.3), λ antes
+do teste (P3.4), pareado por semente (P1.9) e resultado nulo publicado com a
+mesma proemência.
+
+> **Numeração:** o documento chama o experimento de **`E11-JEV`**, mas **E11 já
+> está reservado** (E10 com política aprendida, `docs/09` §8) e **E12** é
+> candidato do P2.7 (`docs/11` §7). Até decisão registrada em "decisões
+> pendentes", mantém-se o nome do documento **`E11-JEV`** — sem renumerar o que
+> já está publicado.
+
 ---
 
 ## Definição de pronto do projeto (versão 0.2)
@@ -151,6 +222,10 @@ o relacional continuar pior, a conclusão é que a hipótese relacional **não s
 - [ ] Toda escolha feita *depois* de ver resultado, listada. *(parcial: a troca da
       métrica de reatividade está listada em `docs/05` §7.5; as escolhas de
       `k_t`, `k_tau`, `k_relax`, `β` e `J` ainda não)*
+- [ ] **Sistema JEV-IA-MUTARIC (P4, objetivo novo 05/10/2026)**: contrato puro
+      `decision_state()`, harness `E11-JEV` (πA–πD) rodando aqui com IC pareada
+      e H1–H4 — e, quando houver acesso ao Jev, adaptador fora da regressão +
+      verificação independente das alegações (`_MUTARIC Jev.md`).
 
 ## Registro de erros, acertos e retomadas de caminho (ciclos 0–9)
 
@@ -236,3 +311,5 @@ motivo. Serviço de memória para quem continuar o trabalho.
 | Manter `read_family_relational` como métrica? | sim/não | só como **sanidade** (docs/02 A4) |
 | Centralização da feature (ruptura com o RIC original) | manter/reverter | manter — sem ela o grafo colapsa; documentar como decisão de projeto |
 | Idioma dos gráficos | PT / EN | PT aqui, EN no README para o GitHub |
+| Nome do experimento do Jev: manter **`E11-JEV`** ou renumerar? | `E11-JEV` (nome do documento) × E13 (E11 = política aprendida já publicada; E12 = candidato do P2.7) | manter `E11-JEV` enquanto não há código — não renumerar o que já está publicado |
+| Acesso ao Jev (API/modelo) | hoje **inexistente** neste terminal | P4.2 usa decisor local determinístico; P4.4 fica **bloqueado** — e nenhuma alegação sobre o Jev vira fato sem número nosso |

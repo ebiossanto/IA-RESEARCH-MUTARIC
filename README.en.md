@@ -307,7 +307,7 @@ not a programming problem. Full argument in `docs/05` §8.
 
 ## Next steps
 
-See `docs/04_plano_desenvolvimento.md` (P0–P3, each with acceptance criteria).
+See `docs/04_plano_desenvolvimento.md` (P0–P4, each with acceptance criteria).
 **P0.1–P0.5 are done** (isomorphism-aware payload, robust soft decoding,
 accuracy-vs-σ curve, clean `run_all.py`, CI on Windows + Linux), and the
 MUTARIC ev, ev 2, ev 3/4 and ev 5/6 verifications are closed (`docs/09`, `docs/10`,
@@ -320,7 +320,18 @@ attackers against our own states — from the ev 3/4 audit). Then **P2**: wire t
 actual TEOA core, a two-agent communication loop, **P2.6** (agent without
 synthetic external events) and **P2.7** (E10c, predictive residue with
 non-reconstruction — now specified with an **adversarial** penalty after the
-linear version came out null in the external E10c). How to resume: `docs/07_continuidade.md`.
+linear version came out null in the external E10c).
+
+**New objective (2026-10-05):** the external `_MUTARIC Jev.md` proposes the
+**JEV-IA-MUTARIC system** — Jev (TypeSafe AI's structured-decision model) as a
+probabilistic evaluation layer on top of the MUTARIC state, in the division
+*LLM explains · Jev decides · MUTARIC regulates*, with the **`E11-JEV`**
+experiment (4 conditions, 12 metrics, H1–H4). Registered as **P4** in `docs/04`
+(pure contract, harness running without Jev, semantic attacker extending
+P1.11, ECE/Brier calibration) — **no claim about Jev is verified**: no access
+to the model, and the document's §9 caveats became project rules.
+
+How to resume: `docs/07_continuidade.md`.
 
 ## Relation to the TEOA project
 

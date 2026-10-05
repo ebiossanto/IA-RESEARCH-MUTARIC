@@ -79,7 +79,7 @@ reprodução numérica, como em `docs/06`.
 
 ## 4. Próximo passo (em ordem)
 
-A fila completa e detalhada está em `docs/04` (P1, P2, P3), com critério de aceite
+A fila completa e detalhada está em `docs/04` (P1, P2, P3, P4), com critério de aceite
 por item. A ordem recomendada para retomar:
 
 1. **P1.1 — baseline séria**: regressão logística/MLP sobre o episódio achatado e
@@ -138,6 +138,16 @@ por item. A ordem recomendada para retomar:
 > confirmação em **P1.9** (o ev 6 §5 escreveu a mesma advertência nossa de
 > pseudorreplicação) e a disciplina de **salvar score e acurácia do atacante
 > por semente** como exigência explícita.
+>
+> **Objetivo novo (05/10/2026, sem números):** o material externo
+> `_MUTARIC Jev.md` propõe o **sistema JEV-IA-MUTARIC** — o Jev como camada
+> probabilística de decisão sobre o estado MUTARIC (*LLM explica · Jev decide ·
+> MUTARIC regula*) — e o experimento **`E11-JEV`** (4 condições πA–πD, 12
+> métricas, H1–H4). Adotado como **P4** em `docs/04`: contrato puro
+> `decision_state()`, harness rodando sem Jev (decisor local), atacante
+> semântico (estende a P1.11) e calibração ECE/Brier — **nenhuma alegação sobre
+> o Jev está verificada** (sem acesso ao modelo; as 7 recusas da §9 do
+> documento viraram regra do projeto).
 
 ## 5. Pendências que vivem fora deste repositório
 
@@ -150,6 +160,7 @@ por item. A ordem recomendada para retomar:
 | Documento `MUTARIC ev 2.md` + `e10b.py` | fora do repo (pasta `mutaric b/MUTARIC_E10b/` no Desktop) | já analisado e reproduzido em `docs/10` (E10b portado, 58/58); só reabrir se chegar o `e10.py`/os testes deles, que ficaram **não verificáveis** |
 | Documento `MUTARIC ev 3 e 4.md` + `MUTARIC_E10d.zip` | fora do repo (pasta `IA-RESEARCH-MUTARIC-main/` no Desktop) | já analisado em `docs/11` (E10d portado, JSON idêntico); E10c ficou **não reproduzível** — só reabrir se chegar o código deles |
 | `MUTARIC ev 5.md` + `MUTARIC ev 6.md` + `MUTARIC_E10e_200_SEMENTES.zip` | fora do repo (mesma pasta `IA-RESEARCH-MUTARIC-main/`) | já analisado em `docs/12` (286/286 + réplica `E10e_repl` aqui); o zip **não tem código** — se chegar o `e10e.py` deles, executar e cruzar com o JSON (a checagem aritmética inteira vira reprodução de verdade) |
+| `_MUTARIC Jev.md` | fora do repo (mesma pasta `IA-RESEARCH-MUTARIC-main/`) | já adotado como **objetivo P4 — sistema JEV-IA-MUTARIC** (`docs/04`, 05/10/2026); reabrir quando houver **acesso ao Jev** — aí P4.3 (adaptador) e P4.4 (verificação das alegações) deixam de estar bloqueados |
 | Licença do repositório | não definida | decidir antes de tornar público |
 
 ## 6. Checklist para adicionar um experimento (E11) sem quebrar nada
@@ -209,7 +220,15 @@ protocol executed on this terminal** (`E10e_repl`, the same 200 seeds,
 paired per seed): the ID Pareto of theirs is contained in ours, **the exact
 OOD Pareto did not repeat** (same structure, different point — published
 with the same prominence), and λ = 1's larger leakage was confirmed with
-the paired per-seed test ev 6 could not run. The next
+the paired per-seed test ev 6 could not run. On 05/10/2026 a **new objective**
+was registered without new numbers: the **JEV-IA-MUTARIC system** from the
+external `_MUTARIC Jev.md` — Jev as a probabilistic decision layer over the
+MUTARIC state (*LLM explains · Jev decides · MUTARIC regulates*) with the
+**`E11-JEV`** experiment (4 conditions, 12 metrics, H1–H4) adopted as **P4** in
+`docs/04` (pure `decision_state()` contract, harness running without Jev,
+semantic attacker extending P1.11, ECE/Brier calibration; **no claim about Jev
+verified** — no access to the model, and the document's §9 caveats became
+project rules). The next
 concrete step is still **P1.1** (serious baselines with bootstrap CIs), then
 P1.2 (paired hypothesis test) and P1.3 (perceptual transformations); P0.1–P0.5
 are closed. External pendencies live outside this repo: the PIXEL repository
